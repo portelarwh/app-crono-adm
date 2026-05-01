@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v4.2.0';
+const CACHE_NAME = 'crono-adm-lean-office-v4.2.1';
 
 const ASSETS = [
   './',
@@ -8,7 +8,8 @@ const ASSETS = [
   './manifest.json',
   './operator-whatsapp-share-fix.js',
   './operator-pwa-update.js',
-  './admin-events.js'
+  './admin-events.js',
+  './admin-events-click-fix.js'
 ];
 
 self.addEventListener('install', event => {
