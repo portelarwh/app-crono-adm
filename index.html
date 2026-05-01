@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- [FIX 3] PWA manifest conectado -->
 <link rel="manifest" href="manifest.json">
-<title>Cronoanálise Homem-Máquina</title>
+<title>Crono ADM — Lean Office</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -184,7 +183,7 @@ position: absolute; right: 4px; bottom: 4px; top: auto; font-family: serif; font
 .branding .linkedin-link { display: inline-flex; align-items: center; gap: 5px; color: #0a66c2; text-decoration: none; font-weight: 600; }
 .branding .linkedin-link svg { width: 13px; height: 13px; display: inline-block; vertical-align: middle; fill: currentColor; }
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-.modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); max-width: 320px; width: 100%; text-align: center; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); max-width: 380px; width: 100%; text-align: center; max-height: 92vh; overflow-y: auto; }
 .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--blue); margin-bottom: 15px; }
 .modal-btn-row { display: flex; gap: 10px; margin-top: 15px; }
 .print-header, .print-summary, .print-executive-summary { display: none; }
@@ -347,6 +346,20 @@ html[data-theme="light"] .app-footer { color: #4a5568 !important; }
 html[data-theme="light"] .footer-separator { color: #94a3b8 !important; }
 html[data-theme="light"] .btn-reset { background-color: #94a3b8 !important; }
 html[data-theme="light"] .setup-na { background-color: #94a3b8 !important; border-color: #94a3b8 !important; }
+
+/* ── Modal — campos administrativos ─────────────────────────── */
+.modal-admin-divider {
+  border-top: 1px dashed var(--border);
+  margin: 10px 0 8px;
+  font-size: 0.63rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 8px;
+}
+.modal-content input[type="number"] { text-align: left; }
+html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color: #c8d0e0; }
 </style>
 </head>
 <div class="app-header" id="appHeader">
@@ -357,17 +370,17 @@ html[data-theme="light"] .setup-na { background-color: #94a3b8 !important; borde
 <script src="operator-pwa-update.js" defer></script>
 <body>
 
-<div id="splashScreen" role="status" aria-label="Carregando Cronoanálise Operador">
+<div id="splashScreen" role="status" aria-label="Carregando Crono ADM Lean Office">
   <div class="splash-content">
-    <div class="splash-brand-row">OPERIX · <span id="splashVersion">v3.0.3</span></div>
+    <div class="splash-brand-row">ADM · <span id="splashVersion">v4.0.0</span></div>
     <div class="splash-icon-wrap">
-      <img class="splash-app-icon" src="assets/Icon-512.png" alt="Cronoanálise Operador"
+      <img class="splash-app-icon" src="assets/Icon-512.png" alt="Crono ADM Lean Office"
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-      <div class="splash-icon-fallback" style="display:none;">🧍‍♂️</div>
+      <div class="splash-icon-fallback" style="display:none;">📋</div>
     </div>
     <div class="splash-title-block">
-      <p class="splash-app-title">CRONOANALISE</p>
-      <p class="splash-app-subtitle">OPERADOR</p>
+      <p class="splash-app-title">CRONO ADM</p>
+      <p class="splash-app-subtitle">LEAN OFFICE</p>
     </div>
     <div class="splash-progress"><div class="splash-progress-bar" id="splashBar"></div></div>
   </div>
