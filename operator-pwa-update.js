@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v4.2.1';
+  var APP_VERSION='v4.3.0';
   window.APP_VERSION=APP_VERSION;
 
   var refreshing=false;
@@ -12,21 +12,19 @@
     var s=document.getElementById('splashVersion'); if(s) s.textContent=APP_VERSION;
   }
 
-  function loadAdminEvents(){
-    if(document.getElementById('adminEventsScript')) return;
+  function appendScript(id, src){
+    if(document.getElementById(id)) return;
     var script=document.createElement('script');
-    script.id='adminEventsScript';
-    script.src='admin-events.js?v='+encodeURIComponent(APP_VERSION);
+    script.id=id;
+    script.src=src+'?v='+encodeURIComponent(APP_VERSION);
     script.defer=true;
     document.head.appendChild(script);
+  }
 
-    if(!document.getElementById('adminEventsClickFixScript')){
-      var fix=document.createElement('script');
-      fix.id='adminEventsClickFixScript';
-      fix.src='admin-events-click-fix.js?v='+encodeURIComponent(APP_VERSION);
-      fix.defer=true;
-      document.head.appendChild(fix);
-    }
+  function loadAdminEvents(){
+    appendScript('adminEventsScript','admin-events.js');
+    appendScript('adminEventsClickFixScript','admin-events-click-fix.js');
+    appendScript('flowEfficiencyScript','flow-efficiency.js');
   }
 
   function toast(msg){
