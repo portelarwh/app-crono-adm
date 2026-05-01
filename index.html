@@ -546,27 +546,27 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 </div>
 <div class="results-grid">
 <div class="result-box"><span class="info-icon" onclick="showInfo('amostras')">!</span><div class="result-title">AMOSTRAS (n)</div><span id="valSamples" class="result-value">0</span><span class="result-sub">Etapas</span></div>
-<div class="result-box"><span class="info-icon" onclick="showInfo('tempoTotal')">!</span><div class="result-title">TEMPO TOTAL</div><span id="valTempoTotal" class="result-value" style="color:var(--text-main);">0.00s</span><span class="result-sub">Ciclo 100%</span></div>
-<div class="result-box setup-feature"><span class="info-icon" onclick="showInfo('setupTotal')">!</span><div class="result-title">SETUP TOTAL</div><span id="valTempoSetup" class="result-value">0.00s</span><span id="valPercSetup" class="result-sub">0%</span></div>
-<div class="result-box"><span class="info-icon" onclick="showInfo('tempoHumano')">!</span><div class="result-title text-blue">TEMPO HUMANO</div><span id="valTempoPessoa" class="result-value text-blue">0.00s</span><span id="valPercPessoa" class="result-sub">0%</span></div>
-<div class="result-box"><span class="info-icon" onclick="showInfo('tempoMaquina')">!</span><div class="result-title text-orange">TEMPO MÁQUINA</div><span id="valTempoMaquina" class="result-value text-orange">0.00s</span><span id="valPercMaquina" class="result-sub">0%</span></div>
-<div class="result-box"><span class="info-icon" onclick="showInfo('tempoProcesso')">!</span><div class="result-title text-purple">TEMPO PROCESSO</div><span id="valTempoProcesso" class="result-value text-purple">0.00s</span><span id="valPercProcesso" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('leadTime')">!</span><div class="result-title">LEAD TIME TOTAL</div><span id="valTempoTotal" class="result-value" style="color:var(--text-main);">0.00s</span><span class="result-sub">100% do fluxo</span></div>
+<div class="result-box setup-feature"><span class="info-icon" onclick="showInfo('depTotal')">!</span><div class="result-title">DEP. TOTAL</div><span id="valTempoSetup" class="result-value">0.00s</span><span id="valPercSetup" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('touchTime')">!</span><div class="result-title text-blue">TOUCH TIME</div><span id="valTempoPessoa" class="result-value text-blue">0.00s</span><span id="valPercPessoa" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoSistema')">!</span><div class="result-title text-orange">TEMPO SISTEMA</div><span id="valTempoMaquina" class="result-value text-orange">0.00s</span><span id="valPercMaquina" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoEspera')">!</span><div class="result-title text-purple">TEMPO ESPERA</div><span id="valTempoProcesso" class="result-value text-purple">0.00s</span><span id="valPercProcesso" class="result-sub">0%</span></div>
 <div class="result-box" style="border-color: rgba(40, 167, 69, 0.5);"><span class="info-icon" onclick="showInfo('va')">!</span><div class="result-title text-green">VA (AGREGA VALOR)</div><span id="valTempoVA" class="result-value text-green">0.00s</span><span id="valPercVA" class="result-sub">0%</span></div>
 <div class="result-box" style="border-color: rgba(220, 53, 69, 0.5);"><span class="info-icon" onclick="showInfo('nva')">!</span><div class="result-title text-red">NVA (DESPERDÍCIO)</div><span id="valTempoNVA" class="result-value text-red">0.00s</span><span id="valPercNVA" class="result-sub">0%</span></div>
-<div class="result-box" style="border-color: rgba(255, 193, 7, 0.5);"><span class="info-icon" onclick="showInfo('bnva')">!</span><div class="result-title text-yellow">BNVA (NECESSÁRIO)</div><span id="valTempoBNVA" class="result-value text-yellow">0.00s</span><span id="valPercBNVA" class="result-sub">0%</span></div>
-<div class="result-box setup-feature" style="border-color: rgba(142, 68, 173, 0.5);"><span class="info-icon" onclick="showInfo('setupInterno')">!</span><div class="result-title text-purple">SETUP INTERNO</div><span id="valTempoSetupInterno" class="result-value text-purple">0.00s</span><span id="valPercSetupInterno" class="result-sub">0%</span></div>
-<div class="result-box setup-feature" style="border-color: rgba(0, 123, 255, 0.5);"><span class="info-icon" onclick="showInfo('setupExterno')">!</span><div class="result-title text-blue">SETUP EXTERNO</div><span id="valTempoSetupExterno" class="result-value text-blue">0.00s</span><span id="valPercSetupExterno" class="result-sub">0%</span></div>
-<div class="result-box setup-feature" style="border-color: rgba(108, 117, 125, 0.5);"><span class="info-icon" onclick="showInfo('smed')">!</span><div class="result-title">ANÁLISE SMED</div><span id="valSmedAnalysis" class="result-value">0%</span><span id="valSmedSub" class="result-sub">Sem setup</span></div>
+<div class="result-box" style="border-color: rgba(255, 193, 7, 0.5);"><span class="info-icon" onclick="showInfo('bnva')">!</span><div class="result-title text-yellow">BNVA (CONTROLE)</div><span id="valTempoBNVA" class="result-value text-yellow">0.00s</span><span id="valPercBNVA" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(142, 68, 173, 0.5);"><span class="info-icon" onclick="showInfo('depInterna')">!</span><div class="result-title text-purple">DEP. INTERNA</div><span id="valTempoSetupInterno" class="result-value text-purple">0.00s</span><span id="valPercSetupInterno" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(0, 123, 255, 0.5);"><span class="info-icon" onclick="showInfo('depExterna')">!</span><div class="result-title text-blue">DEP. EXTERNA</div><span id="valTempoSetupExterno" class="result-value text-blue">0.00s</span><span id="valPercSetupExterno" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(108, 117, 125, 0.5);"><span class="info-icon" onclick="showInfo('indiceDep')">!</span><div class="result-title">ÍNDICE DEPEND.</div><span id="valSmedAnalysis" class="result-value">0%</span><span id="valSmedSub" class="result-sub">Sem dependência</span></div>
 </div>
 </div>
 </div>
 <div class="col-2">
 <div class="card">
-<div class="chart-title" style="margin-top: 0;">Proporção do Ciclo e Qualidade do Tempo</div>
+<div class="chart-title" style="margin-top: 0;">Proporção do Lead Time e Qualidade do Tempo</div>
 <div class="gantt-wrapper" id="ganttChart"></div>
-<div class="chart-title" style="text-align: left; margin-top: 20px;">Detalhes das Etapas e Sequência</div>
+<div class="chart-title" style="text-align: left; margin-top: 20px;">Detalhes das Etapas e Sequência do Fluxo</div>
 <div class="history-table-header print-only">
-<div>Nº</div><div>Tipo</div><div>Valor Agregado</div><div id="tableHeaderSetupCol">Setup</div><div>Tempo</div><div>%</div><div>Descrição da Atividade</div>
+<div>Nº</div><div>Tipo</div><div>Valor Agregado</div><div id="tableHeaderSetupCol">Dep.</div><div>Tempo</div><div>%</div><div>Descrição da Atividade</div>
 </div>
 <div class="history-container" id="historyList"></div>
 <button class="btn-add-manual screen-only" onclick="openManualModal()">➕ Inserir Etapa Manual</button>
