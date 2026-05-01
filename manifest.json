@@ -1,7 +1,7 @@
 {
-  "name": "Cronoanálise Operador",
-  "short_name": "Operador",
-  "description": "Cronoanálise homem-máquina para estudo de tempos, VA/NVA/BNVA, setup e balanceamento operacional.",
+  "name": "Crono ADM — Lean Office",
+  "short_name": "Crono ADM",
+  "description": "Análise de fluxo administrativo: Lead Time, Touch Time, VA/NVA/BNVA e dependências. Lean Office PWA.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
