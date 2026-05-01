@@ -799,7 +799,7 @@ return new Promise(function(resolve, reject){ canvas.toBlob(function(blob){ blob
 
 function generatePNG() {
 var btn = document.getElementById('btnPNG'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true;
-generateImageBlob().then(function(blob){ downloadBlob(blob, 'Balanceamento_' + Date.now() + '.png'); })
+generateImageBlob().then(function(blob){ downloadBlob(blob, 'LeanOffice_' + Date.now() + '.png'); })
 .catch(function(e){ console.error(e); alert('Erro ao gerar imagem.'); })
 .finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; });
 }
@@ -843,7 +843,7 @@ reader.readAsDataURL(pngBlob);
 });
 }
 
-function generateRealPDF() { var btn = document.getElementById('btnPDF'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true; generatePDFBlob().then(function(pdfBlob){ downloadBlob(pdfBlob, 'Balanceamento_' + Date.now() + '.pdf'); }).catch(function(e){ console.error(e); alert('Erro ao gerar relatório.'); }).finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; }); }
+function generateRealPDF() { var btn = document.getElementById('btnPDF'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true; generatePDFBlob().then(function(pdfBlob){ downloadBlob(pdfBlob, 'LeanOffice_' + Date.now() + '.pdf'); }).catch(function(e){ console.error(e); alert('Erro ao gerar relatório.'); }).finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; }); }
 
 function csvEscape(value) { var text = String(value == null ? '' : value).replace(/[\r\n]+/g, ' ').trim(); return text.replace(/;/g, ','); }
 function sanitizeFilename(name) { return String(name || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'arquivo'; }
@@ -852,43 +852,82 @@ function getExecutiveSummaryText() { var execEl = document.getElementById('print
 function getMetricsSnapshot() {
 function txt(id) { var el = document.getElementById(id); return ((el && el.innerText) || '').trim(); }
 return {
-equipName: document.getElementById('equipName').value.trim() || 'Operação não informada',
-samples: txt('valSamples'), total: txt('valTempoTotal'), pessoa: txt('valTempoPessoa'), percPessoa: txt('valPercPessoa'),
-maquina: txt('valTempoMaquina'), percMaquina: txt('valPercMaquina'), processo: txt('valTempoProcesso'), percProcesso: txt('valPercProcesso'),
-va: txt('valTempoVA'), percVA: txt('valPercVA'), nva: txt('valTempoNVA'), percNVA: txt('valPercNVA'), bnva: txt('valTempoBNVA'), percBNVA: txt('valPercBNVA')
+equipName: document.getElementById('equipName').value.trim() || 'Processo não informado',
+samples: txt('valSamples'), total: txt('valTempoTotal'),
+pessoa: txt('valTempoPessoa'), percPessoa: txt('valPercPessoa'),
+maquina: txt('valTempoMaquina'), percMaquina: txt('valPercMaquina'),
+processo: txt('valTempoProcesso'), percProcesso: txt('valPercProcesso'),
+va: txt('valTempoVA'), percVA: txt('valPercVA'),
+nva: txt('valTempoNVA'), percNVA: txt('valPercNVA'),
+bnva: txt('valTempoBNVA'), percBNVA: txt('valPercBNVA')
 };
 }
 
 function buildWhatsAppSummary() {
-var m = getMetricsSnapshot(); var analyst = document.getElementById('analystName').value.trim() || 'Não informado';
-return ['📄 DADOS TÉCNICOS','🏭 *Operação:* ' + m.equipName,'👤 *Analista:* ' + analyst,'🔢 *Etapas registradas:* ' + m.samples,'','⏱️ *Tempo total do ciclo:* ' + m.total,'• 🧍 Humano: ' + m.pessoa + ' (' + m.percPessoa + ')','• ⚙️ Máquina: ' + m.maquina + ' (' + m.percMaquina + ')','• ⏳ Espera/Processo: ' + m.processo + ' (' + m.percProcesso + ')','','📊 *Análise de valor agregado*','• 🟢 VA: ' + m.va + ' (' + m.percVA + ')','• 🔴 NVA: ' + m.nva + ' (' + m.percNVA + ')','• 🟡 BNVA: ' + m.bnva + ' (' + m.percBNVA + ')','','📝 *RESUMO:*', getExecutiveSummaryText() || 'Resumo automático não disponível.'].join('\n');
+var m = getMetricsSnapshot();
+var analyst = document.getElementById('analystName').value.trim() || 'Não informado';
+return [
+'📄 *ANÁLISE LEAN OFFICE*',
+'📋 *Demanda/Processo:* ' + m.equipName,
+'👤 *Analista:* ' + analyst,
+'🔢 *Etapas registradas:* ' + m.samples,
+'',
+'⏱️ *Lead Time Total:* ' + m.total,
+'• 📋 Touch Time (Atend.): ' + m.pessoa + ' (' + m.percPessoa + ')',
+'• 💻 Sistema: ' + m.maquina + ' (' + m.percMaquina + ')',
+'• ⏸️ Espera: ' + m.processo + ' (' + m.percProcesso + ')',
+'',
+'📊 *Análise de Valor Agregado*',
+'• 🟢 VA: ' + m.va + ' (' + m.percVA + ')',
+'• 🔴 NVA: ' + m.nva + ' (' + m.percNVA + ')',
+'• 🟡 BNVA: ' + m.bnva + ' (' + m.percBNVA + ')',
+'',
+'📝 *RESUMO EXECUTIVO:*',
+getExecutiveSummaryText() || 'Resumo automático não disponível.'
+].join('\n');
 }
 
 function shareWhatsApp() {
 var btn = document.getElementById('btnWhatsApp'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true;
 var equipName = document.getElementById('equipName').value.trim() || 'Operação não informada'; var safeBase = sanitizeFilename(equipName || 'cronoanalise'); var shareText = buildWhatsAppSummary();
 generateImageBlob().then(function(pngBlob){
-var pngFile = new File([pngBlob], 'Balanceamento_' + safeBase + '.png', { type: 'image/png' });
+var pngFile = new File([pngBlob], 'LeanOffice_' + safeBase + '.png', { type: 'image/png' });
 if (navigator.share) {
 return Promise.resolve().then(function(){
 if (!navigator.canShare || navigator.canShare({ files: [pngFile] })) {
-return navigator.share({ title: 'Cronoanálise - ' + equipName, text: shareText, files: [pngFile] });
-} else { downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); }
-}).catch(function(){ downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); alert('O WhatsApp recebeu o resumo executivo. O PNG do relatório foi baixado no aparelho para anexar manualmente.'); });
+return navigator.share({ title: 'Crono ADM — ' + equipName, text: shareText, files: [pngFile] });
+} else { downloadBlob(pngBlob, 'LeanOffice_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); }
+}).catch(function(){ downloadBlob(pngBlob, 'LeanOffice_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); alert('O WhatsApp recebeu o resumo executivo. O PNG do relatório foi baixado no aparelho para anexar manualmente.'); });
 }
-downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank');
+downloadBlob(pngBlob, 'LeanOffice_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank');
 }).catch(function(e){ console.error(e); alert('Erro ao preparar compartilhamento no WhatsApp.'); }).finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; });
 }
 
 function exportToExcel() {
 if (elements.length === 0) return;
 var equipName = document.getElementById('equipName').value.trim() || 'Nao_Identificado'; var safeFileName = sanitizeFilename(equipName);
-var lines = ['Equipamento/Operacao;' + csvEscape(equipName), 'TipoEstudo;' + csvEscape(getStudyTypeLabel()), '', 'Ordem;Responsavel;Analise VA;Setup;Tempo (s);Descricao'];
+var lines = [
+'Demanda/Processo;' + csvEscape(equipName),
+'TipoEstudo;' + csvEscape(getStudyTypeLabel()),
+'',
+'Ordem;Tipo;Analise VA;Dependencia;Tempo (s);Descricao;Area;Solicitante;TipoDemanda;SLA(h);Prioridade;Canal'
+];
 for (var i = 0; i < elements.length; i++) {
-var el = elements[i]; var tipo = el.type === 'pessoa' ? 'Operador' : (el.type === 'maquina' ? 'Maquina' : 'Processo/Espera'); var analise = (el.va || '').toUpperCase(); var setup = getSetupShortLabel(el.setup || 'na'); var tempo = String(el.time.toFixed(2)).replace('.', ','); var desc = csvEscape(el.desc || 'Sem descricao');
-lines.push((i + 1) + ';' + tipo + ';' + analise + ';' + setup + ';' + tempo + ';' + desc);
+var el = elements[i];
+var tipo = csvEscape(getTypeLabel(el.type));
+var analise = (el.va || '').toUpperCase();
+var dep = getSetupShortLabel(el.setup || 'na');
+var tempo = String(el.time.toFixed(2)).replace('.', ',');
+var desc = csvEscape(el.desc || '');
+var area = csvEscape(el.area || '');
+var requester = csvEscape(el.requester || '');
+var demandType = csvEscape(el.demandType || '');
+var sla = csvEscape(el.sla || '');
+var priority = csvEscape(el.priority || '');
+var channel = csvEscape(el.channel || '');
+lines.push((i + 1) + ';' + tipo + ';' + analise + ';' + dep + ';' + tempo + ';' + desc + ';' + area + ';' + requester + ';' + demandType + ';' + sla + ';' + priority + ';' + channel);
 }
-var csvContent = '\uFEFF' + lines.join('\r\n'); var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); downloadBlob(blob, 'balanceamento_' + safeFileName + '.csv');
+var csvContent = '\uFEFF' + lines.join('\r\n'); var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); downloadBlob(blob, 'lean_office_' + safeFileName + '.csv');
 }
 
 /* [FIX 2] goalTime agora persiste no localStorage */
