@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v4.2.0';
+  var APP_VERSION='v4.2.1';
   window.APP_VERSION=APP_VERSION;
 
   var refreshing=false;
@@ -19,6 +19,14 @@
     script.src='admin-events.js?v='+encodeURIComponent(APP_VERSION);
     script.defer=true;
     document.head.appendChild(script);
+
+    if(!document.getElementById('adminEventsClickFixScript')){
+      var fix=document.createElement('script');
+      fix.id='adminEventsClickFixScript';
+      fix.src='admin-events-click-fix.js?v='+encodeURIComponent(APP_VERSION);
+      fix.defer=true;
+      document.head.appendChild(fix);
+    }
   }
 
   function toast(msg){
