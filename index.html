@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- [FIX 3] PWA manifest conectado -->
+<link rel="manifest" href="manifest.json">
+<title>Cronoanálise Homem-Máquina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+--bg-color: #121212;
+--card-bg: #1e1e1e;
+--text-main: #ffffff;
+--text-muted: #a0a0a0;
+--border: #333333;
+--green: #28a745;
+--red: #dc3545;
+--blue: #007bff;
+--orange: #fd7e14;
+--yellow: #ffc107;
+--purple: #8e44ad;
+}
+
+/* ── Injected theme support (light mode) ───────────────────────── */
+html[data-theme="light"]{
+--bg-color:#f0f3f9 !important; --bg:#f0f3f9 !important;
+--card-bg:#ffffff !important; --surface:#ffffff !important;
+--text-main:#1a1f2e !important; --text:#1a1f2e !important;
+--text-muted:#4a5568 !important; --muted:#4a5568 !important;
+--border:#c8d0e0 !important;
+}
+
+html[data-theme="light"] body{ background:#f0f3f9 !important; color:#1a1f2e !important; }
+html[data-theme="light"] .card,
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea{
+background:#ffffff !important; color:#1a1f2e !important; border-color:#c8d0e0 !important;
+}
+html[data-theme="light"] table, html[data-theme="light"] th, html[data-theme="light"] td{
+color:#1a1f2e !important; border-color:#c8d0e0 !important;
+}
+html[data-theme="light"] .modal-content{ background:#ffffff !important; color:#1a1f2e !important; }
+.app-header {
+  position: fixed; top: 8px; right: 10px; z-index: 99999;
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px;
+  background: rgba(30,30,30,0.88);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+html[data-theme="light"] .app-header {
+  background: rgba(255,255,255,0.92);
+  border-color: #c8d0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.app-version {
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--text-muted); letter-spacing: 0.3px;
+  user-select: none; pointer-events: none;
+}
+#op-theme-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.3); color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 15px; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: -apple-system, sans-serif;
+  position: static; left: auto; top: auto;
+}
+html[data-theme="light"] #op-theme-btn {
+  background: rgba(0,0,0,0.07); color: #1a1f2e; border-color: #c8d0e0;
+}
+@media print { .app-header { display: none !important; } }
+body.export-mode .app-header { display: none !important; }
+
+html { overflow-x: hidden; }
+  
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+padding: 8px;
+margin: 0;
+background-color: var(--bg-color);
+color: var(--text-main);
+touch-action: manipulation;
+user-select: none;
+-webkit-user-select: none;
+padding-bottom: 120px;
+position: relative;
+overflow-x: hidden;
+}
+
+#print-wrapper { display: flex; flex-direction: column; gap: 0; width: 100%; }
+.card { background: var(--card-bg); padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.input-group { display: flex; flex-direction: column; }
+label { font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
+input, select {
+width: 100%; box-sizing: border-box; font-size: 1rem; padding: 6px;
+border: 1px solid var(--border); border-radius: 6px; background: #2a2a2a;
+color: white; text-align: center; font-weight: bold;
+}
+input:focus, select:focus { outline: 2px solid var(--blue); }
+.live-timer { font-size: 2.8rem; font-weight: bold; text-align: center; font-variant-numeric: tabular-nums; margin: 5px 0 10px 0; font-family: monospace; color: #fff; }
+.btn-row { display: flex; gap: 6px; margin-bottom: 10px; }
+button { border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.1s; }
+button:active:not(:disabled) { transform: scale(0.95); }
+button:disabled { opacity: 0.4; pointer-events: none; }
+.btn-start { flex: 1.5; padding: 12px 2px; background-color: var(--green); font-size: 0.85rem; }
+.btn-stop { flex: 1.5; padding: 12px 2px; background-color: var(--red); font-size: 0.85rem; }
+.btn-reset { flex: 1; padding: 12px 2px; background-color: #555; font-size: 0.85rem; }
+.results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.result-box { background: #2a2a2a; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid var(--border); position: relative; }
+.info-icon {
+background: rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 50%; width: 18px; height: 18px;
+display: flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer;
+position: absolute; right: 4px; bottom: 4px; top: auto; font-family: serif; font-style: italic; font-weight: bold;
+}
+.info-inline { background: rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; font-family: serif; font-style: italic; font-weight: bold; margin-left: 6px; vertical-align: middle; }
+.export-mode .info-icon, .export-mode .info-inline { display:none !important; }
+.result-title { font-size: 0.6rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 2px; display: block; }
+.result-value { display: block; font-size: 1.2rem; font-weight: bold; margin-top: 4px; }
+.result-sub { display: block; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; margin-top: 2px; }
+.text-blue { color: #4dabf7 !important; }
+.text-orange { color: var(--orange) !important; }
+.text-green { color: var(--green) !important; }
+.text-red { color: var(--red) !important; }
+.text-yellow { color: var(--yellow) !important; }
+.text-purple { color: #c49cef !important; }
+.chart-title { font-size: 0.8rem; font-weight: bold; color: var(--text-muted); text-transform: uppercase; text-align: center; }
+.history-container { max-height: 220px; overflow-y: auto; margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; background: #1a1a1a; display: flex; flex-direction: column; }
+.history-row { display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); gap: 6px; transition: opacity 0.2s; }
+.history-row:last-child { border-bottom: none; }
+.history-row.dragging { opacity: 0.4; background: #333; }
+.drag-handle { color: var(--text-muted); font-size: 1.2rem; cursor: grab; padding: 0 4px; touch-action: none; }
+.type-badge { padding: 4px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; min-width: 30px; text-align: center; }
+.badge-pessoa { background-color: rgba(0, 123, 255, 0.2); color: #4dabf7; border: 1px solid #4dabf7; }
+.badge-maquina { background-color: rgba(253, 126, 20, 0.2); color: var(--orange); border: 1px solid var(--orange); }
+.badge-processo { background-color: rgba(142, 68, 173, 0.2); color: #c49cef; border: 1px solid #c49cef; }
+.badge-va { padding: 4px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; min-width: 44px; text-align: center; cursor: pointer; transition: background 0.2s; }
+.is-va { background-color: var(--green); color: white; border: 1px solid var(--green); }
+.is-nva { background-color: var(--red); color: white; border: 1px solid var(--red); }
+.is-bnva { background-color: var(--yellow); color: #000; border: 1px solid var(--yellow); }
+.badge-setup { padding: 4px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; min-width: 44px; text-align: center; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+.setup-na { background-color: #555; color: white; border: 1px solid #666; }
+.setup-externo { background-color: rgba(0, 123, 255, 0.20); color: #4dabf7; border: 1px solid #4dabf7; }
+.setup-interno { background-color: rgba(142, 68, 173, 0.24); color: #c49cef; border: 1px solid #c49cef; }
+.study-type-banner { color: var(--text-muted); font-size: 0.82rem; margin: 4px 0 10px 0; text-align: center; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.history-time { font-weight: bold; font-family: monospace; font-size: 0.95rem; min-width: 45px; text-align: center; }
+.history-perc { font-weight: bold; font-family: monospace; font-size: 0.85rem; min-width: 40px; text-align: center; color: var(--text-muted); }
+.element-desc { flex: 1; background: transparent; border: none; border-bottom: 1px dashed var(--border); color: white; text-align: left; font-size: 0.85rem; font-weight: normal; padding: 4px; border-radius: 0; min-width: 0; }
+.element-desc:focus { outline: none; border-bottom: 1px solid var(--blue); background: rgba(255,255,255,0.05); }
+.btn-add-manual { width: 100%; padding: 12px; background: transparent; border: 2px dashed #555; color: var(--text-muted); border-radius: 8px; margin-top: 10px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.btn-add-manual:active { background: rgba(255,255,255,0.05); border-color: var(--blue); color: var(--blue); }
+.print-only { display: none; }
+.type-inline { display: inline-flex; align-items: center; gap: 6px; }
+.type-label { display: none; }
+.element-desc-print { flex: 1; text-align: left; font-size: 0.85rem; padding: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.history-table-header { display: none; }
+.btn-edit { background: transparent; color: var(--blue); padding: 4px 6px; border: 1px solid var(--blue); font-size: 0.7rem; min-width: 30px; border-radius: 4px; cursor: pointer; }
+.btn-delete { background: transparent; color: var(--red); padding: 4px 6px; border: 1px solid var(--red); font-size: 0.7rem; min-width: 30px; }
+.gantt-wrapper { height: 50px; display: flex; width: 100%; border-radius: 6px; margin-bottom: 10px; background: transparent; }
+.gantt-block { height: 100%; display: flex; flex-direction: column; transition: width 0.3s ease; box-sizing: border-box; padding: 0 1px; }
+.gantt-main-bar { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: bold; color: white; overflow: hidden; white-space: nowrap; border-radius: 3px; }
+.gantt-pessoa .gantt-main-bar { background-color: var(--blue); }
+.gantt-maquina .gantt-main-bar { background-color: var(--orange); }
+.gantt-processo .gantt-main-bar { background-color: var(--purple); }
+.gantt-va-line { height: 6px; margin-top: 3px; border-radius: 2px; width: 100%; }
+.btn-pdf { width: 100%; padding: 12px; background-color: #e2e2e2; color: #121212; margin-top: 10px; font-size: 0.9rem; }
+.btn-export { width: 100%; padding: 12px; background-color: var(--text-muted); color: var(--bg-color); margin-top: 10px; font-size: 0.9rem; }
+.fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(transparent, var(--bg-color) 30%); z-index: 50; display: flex; gap: 8px; transform: translateZ(0); -webkit-transform: translateZ(0); }
+.btn-lap-pessoa, .btn-lap-maquina, .btn-lap-processo { flex: 1; padding: 15px 5px; font-size: 1rem; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; line-height: 1; }
+.btn-lap-pessoa { background-color: var(--blue); box-shadow: 0 5px 0 #0056b3; }
+.btn-lap-maquina { background-color: var(--orange); box-shadow: 0 5px 0 #d36b00; }
+.btn-lap-processo { background-color: var(--purple); box-shadow: 0 5px 0 #502e8d; }
+.btn-lap-pessoa:active:not(:disabled), .btn-lap-maquina:active:not(:disabled), .btn-lap-processo:active:not(:disabled) { transform: translateY(5px); box-shadow: none; }
+.lap-icon { font-size: 1.4rem; }
+.lap-text { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+.branding { text-align: center; margin-top: 16px; margin-bottom: 24px; font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 3px; line-height: 1.2; }
+.branding .linkedin-link { display: inline-flex; align-items: center; gap: 5px; color: #0a66c2; text-decoration: none; font-weight: 600; }
+.branding .linkedin-link svg { width: 13px; height: 13px; display: inline-block; vertical-align: middle; fill: currentColor; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); max-width: 320px; width: 100%; text-align: center; }
+.modal-title { font-size: 1.2rem; font-weight: bold; color: var(--blue); margin-bottom: 15px; }
+.modal-btn-row { display: flex; gap: 10px; margin-top: 15px; }
+.print-header, .print-summary, .print-executive-summary { display: none; }
+body.export-mode { background: white !important; color: #222 !important; width: 794px !important; padding: 0 !important; margin: 0 !important; }
+.export-mode #exportContainer { width: 794px !important; min-height: 1123px !important; padding: 24px 28px !important; box-sizing: border-box !important; background: white !important; }
+.export-mode .card { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 10px !important; }
+.export-mode #configForm, .export-mode .btn-row, .export-mode .fixed-bottom, .export-mode .btn-delete, .export-mode .btn-edit, .export-mode .drag-handle, .export-mode .btn-add-manual, .export-mode #actionButtons, .export-mode .branding, .export-mode .screen-only { display: none !important; }
+.export-mode .print-only { display: inline-block !important; }
+.export-mode #print-wrapper { display: flex !important; flex-direction: column !important; gap: 0 !important; width: 100% !important; }
+.export-mode .col-1, .export-mode .col-2 { width: 100% !important; }
+.export-mode .print-summary { display: block !important; margin-bottom: 6px; font-size: 9pt; background: #f8f9fa; padding: 7px 12px; border: 1px solid #ddd; border-radius: 5px; }
+.export-mode label { color: #555 !important; }
+.export-mode .result-title { font-size: 6.5pt !important; }
+.export-mode .result-sub { font-size: 7.5pt !important; color: #666 !important; }
+.export-mode .results-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; margin-bottom: 8px !important; }
+.export-mode .result-box { background: #f8f9fa !important; padding: 7px 6px !important; border-style: solid !important; border-width: 1px !important; }
+.export-mode .result-value { font-size: 13pt !important; color: #000 !important; }
+.export-mode .result-value.text-green { color: #28a745 !important; }
+.export-mode .result-value.text-yellow { color: #d39e00 !important; }
+.export-mode .result-value.text-red { color: #dc3545 !important; }
+.export-mode .text-blue { color: #007bff !important; }
+.export-mode .text-orange { color: #fd7e14 !important; }
+.export-mode .text-purple { color: #8e44ad !important; }
+.export-mode .text-green { color: #28a745 !important; }
+.export-mode .text-red { color: #dc3545 !important; }
+.export-mode .text-yellow { color: #d39e00 !important; }
+.export-mode .gantt-wrapper { background: transparent !important; gap: 2px !important; height: 60px !important; margin-bottom: 14px !important; overflow: visible !important; }
+.export-mode .gantt-block { padding: 0 !important; overflow: visible !important; }
+.export-mode .gantt-main-bar { font-size: 9pt !important; font-weight: 700 !important; border-radius: 3px !important; }
+.export-mode .gantt-va-line { height: 6px !important; margin-top: 3px !important; }
+.export-mode .chart-title { font-size: 8pt !important; margin-bottom: 4px !important; margin-top: 8px !important; }
+.export-mode .history-container { display: flex !important; flex-direction: column !important; gap: 0 !important; background: transparent !important; border: none !important; margin-top: 0 !important; max-height: none !important; overflow: visible !important; }
+.export-mode .history-table-header {
+display: grid !important; grid-template-columns: 26px 68px 44px 44px 48px 36px 1fr !important; column-gap: 5px !important; align-items: center !important;
+background: #f1f3f5 !important; border: 1px solid #d6d9dd !important; border-radius: 4px !important; padding: 4px 6px !important;
+font-size: 7pt !important; font-weight: 700 !important; color: #4b5563 !important; margin-bottom: 3px !important; box-sizing: border-box !important;
+text-transform: uppercase !important; letter-spacing: 0.02em !important;
+}
+.export-mode .history-row {
+display: grid !important; grid-template-columns: 26px 68px 44px 44px 48px 36px 1fr !important; align-items: center !important; column-gap: 5px !important;
+border: none !important; border-bottom: 1px solid #f0f0f0 !important; background: #ffffff !important; border-radius: 0 !important;
+padding: 3px 6px !important; min-height: 0 !important; margin-bottom: 0 !important; break-inside: avoid !important; page-break-inside: avoid !important;
+}
+.export-mode .history-row:nth-child(even) { background: #fafafa !important; }
+.export-mode .history-id { width: 26px !important; max-width: 26px !important; min-width: 26px !important; text-align: center !important; justify-self: center !important; color: #007bff !important; font-size: 7pt !important; font-weight: 700 !important; font-variant-numeric: tabular-nums !important; white-space: nowrap !important; overflow: hidden !important; }
+.export-mode .type-badge { width: 68px !important; max-width: 68px !important; min-width: 68px !important; justify-content: center !important; text-align: center !important; padding: 2px 3px !important; min-height: 0 !important; border-radius: 3px !important; font-size: 7pt !important; display: inline-flex !important; align-items: center !important; box-sizing: border-box !important; }
+.export-mode .type-inline { width: 100% !important; justify-content: center !important; gap: 0 !important; display: inline-flex !important; align-items: center !important; }
+.export-mode .type-icon { display: none !important; }
+.export-mode .type-label { display: inline !important; font-weight: 700 !important; }
+.export-mode .badge-va.screen-only { display: none !important; }
+.export-mode .badge-va.print-only { display: inline-flex !important; width: 44px !important; max-width: 44px !important; min-width: 44px !important; min-height: 0 !important; padding: 2px 3px !important; font-size: 7pt !important; border-radius: 3px !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }
+.export-mode .history-time { width: 48px !important; max-width: 48px !important; min-width: 48px !important; text-align: center !important; justify-self: center !important; font-size: 7.5pt !important; font-variant-numeric: tabular-nums !important; white-space: nowrap !important; font-family: monospace !important; font-weight: 700 !important; }
+.export-mode .history-perc { width: 36px !important; max-width: 36px !important; min-width: 36px !important; text-align: center !important; justify-self: center !important; font-size: 7.5pt !important; font-family: monospace !important; font-variant-numeric: tabular-nums !important; font-weight: 700 !important; }
+.export-mode .element-desc-print { display: block !important; width: 100% !important; min-width: 0 !important; font-size: 7.5pt !important; line-height: 1.2 !important; color: #111827 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; padding: 0 !important; word-break: keep-all !important; overflow-wrap: anywhere !important; hyphens: none !important; }
+.export-mode .print-header { display: flex !important; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 12px; width: 100%; }
+.export-mode .print-header h1 { margin: 0; font-size: 15pt; color: #222; }
+.export-mode .print-header p { margin: 0; font-size: 8.5pt; color: #555; line-height: 1.6; }
+.export-mode .print-executive-summary { display: block !important; font-size: 8pt; font-style: italic; color: #444; margin-bottom: 8px; padding: 8px 11px; border-left: 3px solid var(--blue); background: #f4f4f4; line-height: 1.35; }
+.export-mode .is-va { background-color: #28a745 !important; color: white !important; border: 1px solid #28a745 !important; }
+.export-mode .is-nva { background-color: #dc3545 !important; color: white !important; border: 1px solid #dc3545 !important; }
+.export-mode .is-bnva { background-color: #ffc107 !important; color: #000 !important; border: 1px solid #ffc107 !important; }
+
+.goal-wrapper { display: flex; justify-content: center; margin: 6px 0 12px 0; }
+.goal-wrapper .input-group { width: 62%; }
+.goal-label { font-size: 0.65rem; }
+body.export-mode .live-timer { display: none !important; }
+.gantt-idx { display: none; }
+body.export-mode .gantt-idx { display: block !important; margin-top: 4px; font-size: 8pt; font-weight: 700; color: #111; text-align: center; }
+body.export-mode .desc-placeholder { font-style: italic !important; font-weight: 400 !important; }
+body.export-mode .history-time, body.export-mode .history-perc { font-family: monospace !important; font-variant-numeric: tabular-nums !important; text-align: center !important; justify-self: center !important; }
+body.export-mode .history-table-header > div { text-align: center !important; justify-self: center !important; }
+.export-mode .app-footer { display: none !important; }
+
+/* ── App footer ─────────────────────────────────────────────────── */
+.app-footer { text-align: center; margin-top: 16px; margin-bottom: 24px; font-size: 0.82rem; color: var(--text-muted); }
+.footer-content { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.footer-link { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 600; }
+.footer-link.linkedin { color: #0a66c2; }
+.footer-link.whatsapp { color: #25D366; }
+.footer-icon svg { width: 13px; height: 13px; fill: currentColor; vertical-align: middle; }
+.footer-separator { color: var(--text-muted); }
+@media print { .app-footer { display: none !important; } }
+
+/* ── Splash Screen ──────────────────────────────────────────────── */
+#splashScreen {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #0d1117;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#splashScreen.splash-hidden {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.splash-content {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 32px; text-align: center;
+}
+.splash-brand-row {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+  color: #4a5568; text-transform: uppercase; margin-bottom: 4px;
+}
+#splashVersion { color: #4a90d9; }
+.splash-icon-wrap {
+  width: 96px; height: 96px; margin: 8px 0;
+}
+.splash-app-icon {
+  width: 96px; height: 96px; border-radius: 20px;
+  object-fit: contain;
+}
+.splash-icon-fallback {
+  width: 96px; height: 96px; border-radius: 20px;
+  background: linear-gradient(135deg, #1a2744 0%, #0d1b3e 100%);
+  border: 2px solid #1e3a6e;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem;
+}
+.splash-title-block { margin-top: 4px; }
+.splash-app-title {
+  margin: 0; font-size: 1.05rem; font-weight: 800;
+  letter-spacing: 0.18em; color: #e2e8f0; text-transform: uppercase;
+}
+.splash-app-subtitle {
+  margin: 2px 0 0 0; font-size: 0.78rem; font-weight: 500;
+  letter-spacing: 0.22em; color: #4a90d9; text-transform: uppercase;
+}
+.splash-progress {
+  width: 160px; height: 3px; background: #1e2a3a;
+  border-radius: 2px; overflow: hidden; margin-top: 20px;
+}
+.splash-progress-bar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #1e6fbf, #4a90d9);
+  border-radius: 2px;
+  transition: width 0.08s linear;
+}
+
+/* ── Light mode — overrides de valores hardcoded ──────────────── */
+html[data-theme="light"] .live-timer { color: #1a1f2e !important; }
+html[data-theme="light"] .result-box { background: #f0f4fa !important; border-color: #c8d0e0 !important; }
+html[data-theme="light"] .history-container { background: #f8fafc !important; border-color: #c8d0e0 !important; }
+html[data-theme="light"] .history-row { background: #ffffff !important; border-bottom-color: #e2e8f0 !important; }
+html[data-theme="light"] .history-row:hover { background: #f1f5fb !important; }
+html[data-theme="light"] .history-row.dragging { background: #e8edf5 !important; }
+html[data-theme="light"] .element-desc { color: #1a1f2e !important; border-bottom-color: #c8d0e0 !important; }
+html[data-theme="light"] .element-desc:focus { background: rgba(0,0,0,0.03) !important; border-bottom-color: #007bff !important; }
+html[data-theme="light"] .drag-handle { color: #94a3b8 !important; }
+html[data-theme="light"] .history-time { color: #1a1f2e !important; }
+html[data-theme="light"] .history-perc { color: #4a5568 !important; }
+html[data-theme="light"] .study-type-banner { color: #4a5568 !important; }
+html[data-theme="light"] .chart-title { color: #4a5568 !important; }
+html[data-theme="light"] .result-title { color: #4a5568 !important; }
+html[data-theme="light"] .result-sub { color: #4a5568 !important; }
+html[data-theme="light"] .info-icon,
+html[data-theme="light"] .info-inline { background: rgba(0,0,0,0.07) !important; color: #4a5568 !important; }
+html[data-theme="light"] .btn-add-manual { border-color: #c8d0e0 !important; color: #4a5568 !important; }
+html[data-theme="light"] .btn-add-manual:hover { border-color: #007bff !important; color: #007bff !important; }
+html[data-theme="light"] .fixed-bottom { background: linear-gradient(transparent, #f0f3f9 30%) !important; }
+html[data-theme="light"] .app-footer { color: #4a5568 !important; }
+html[data-theme="light"] .footer-separator { color: #94a3b8 !important; }
+html[data-theme="light"] .btn-reset { background-color: #94a3b8 !important; }
+html[data-theme="light"] .setup-na { background-color: #94a3b8 !important; border-color: #94a3b8 !important; }
+</style>
+</head>
+<div class="app-header" id="appHeader">
+  <span id="appVersion" class="app-version"></span>
+  <button id="op-theme-btn" type="button" aria-label="Alternar tema">☀️</button>
+</div>
+<script src="operator-whatsapp-share-fix.js" defer></script>
+<script src="operator-pwa-update.js" defer></script>
+<body>
+
+<div id="splashScreen" role="status" aria-label="Carregando Cronoanálise Operador">
+  <div class="splash-content">
+    <div class="splash-brand-row">OPERIX · <span id="splashVersion">v3.0.3</span></div>
+    <div class="splash-icon-wrap">
+      <img class="splash-app-icon" src="assets/Icon-512.png" alt="Cronoanálise Operador"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <div class="splash-icon-fallback" style="display:none;">🧍‍♂️</div>
+    </div>
+    <div class="splash-title-block">
+      <p class="splash-app-title">CRONOANALISE</p>
+      <p class="splash-app-subtitle">OPERADOR</p>
+    </div>
+    <div class="splash-progress"><div class="splash-progress-bar" id="splashBar"></div></div>
+  </div>
+</div>
+<div class="modal-overlay" id="manualModal">
+<div class="modal-content">
+<div class="modal-title" id="modalMainTitle">➕ Inserir/Editar Etapa</div>
+<div class="input-group" style="margin-bottom: 10px; text-align: left;">
+<label>Descrição da Etapa</label>
+<input type="text" id="manualDesc" placeholder="Ex: Esfriando bolo...">
+</div>
+<div class="config-grid" style="margin-bottom: 10px; text-align: left;">
+<div class="input-group">
+<label>Duração</label>
+<input type="number" id="manualTime" placeholder="Ex: 45" min="0.1" step="0.1">
+</div>
+<div class="input-group">
+<label>Unidade</label>
+<select id="manualUnit">
+<option value="60">Minutos</option>
+<option value="1" selected>Segundos</option>
+</select>
+</div>
+</div>
+<div class="config-grid" style="margin-bottom: 15px; text-align: left;">
+<div class="input-group">
+<label>Responsável</label>
+<select id="manualType">
+<option value="processo">⏳ Espera / Processo</option>
+<option value="maquina">⚙️ Máquina</option>
+<option value="pessoa" selected>🧍‍♂️ Humano</option>
+</select>
+</div>
+<div class="input-group">
+<label>Classificação</label>
+<select id="manualVa">
+<option value="va" selected>VA (Agrega)</option>
+<option value="nva">NVA (Desperdício)</option>
+<option value="bnva">BNVA (Necessário)</option>
+</select>
+</div>
+</div>
+<div class="config-grid" style="margin-bottom: 15px; text-align: left; grid-template-columns: 1fr;">
+<div class="input-group">
+<label>Setup</label>
+<select id="manualSetup">
+<option value="na" selected>N/A (Não é setup)</option>
+<option value="externo">EXT (Setup Externo)</option>
+<option value="interno">INT (Setup Interno)</option>
+</select>
+</div>
+</div>
+<div class="modal-btn-row">
+<button onclick="closeManualModal()" style="flex:1; background:#555; padding:10px; color:white;">Cancelar</button>
+<button id="btnSaveManual" onclick="saveManualTime()" style="flex:1; background:var(--green); padding:10px; color:white;">Salvar</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="infoModal">
+<div class="modal-content">
+<div class="modal-title" id="infoTitle">Informação</div>
+<div id="infoText" style="text-align:left; color:#d0d0d0; line-height:1.45; font-size:0.95rem;"></div>
+<div class="modal-btn-row">
+<button onclick="closeInfo()" style="flex:1; background:var(--blue); padding:10px; color:white;">Fechar</button>
+</div>
+</div>
+</div>
+
+<div id="exportContainer">
+<div class="print-header">
+<div>
+<h1>Relatório de Balanceamento de Operação</h1>
+<p>Cronoanálise detalhada por elementos (Homem x Máquina x Processo) com Análise VA.</p>
+</div>
+<div style="text-align: right;">
+<p><strong>Data:</strong> <span id="printDate">--/--/----</span></p>
+<p><strong>Analista:</strong> <span id="printAnalyst">—</span></p>
+</div>
+</div>
+<div id="print-wrapper">
+<div class="col-1">
+<div class="card" id="configForm">
+<div class="input-group" style="margin-bottom: 10px;">
+<label>Equipamento / Produto / Operação</label>
+<input type="text" id="equipName" placeholder="Ex: Setup Injetora 04...">
+</div>
+<div class="input-group" style="margin-bottom: 10px;">
+<label>Analista Responsável</label>
+<input type="text" id="analystName" placeholder="Nome de quem está medindo...">
+</div>
+<div class="input-group" style="margin-bottom: 10px;">
+<label>Tipo de estudo</label>
+<select id="studyType" onchange="handleStudyTypeChange()">
+<option value="operacional" selected>Operacional</option>
+<option value="operacional_setup">Operacional/Setup</option>
+</select>
+</div>
+</div>
+<div class="print-summary"><div><strong>Operação Analisada:</strong> <span id="printEquipName">—</span></div></div>
+<div class="print-executive-summary" id="printExecutiveSummary">—</div>
+<div class="card">
+<div class="btn-row">
+<button id="btnStart" class="btn-start" onclick="startTimer()">▶ Iniciar</button>
+<button id="btnStop" class="btn-stop" onclick="stopTimer()" disabled>⏹ Fechar</button>
+<button id="btnReset" class="btn-reset" onclick="resetTimer()">♻️ Reset</button>
+</div>
+<div class="live-timer" id="liveTimer">00:00.00</div>
+<div class="study-type-banner" id="studyTypeBanner">Estudo: Operacional</div>
+<div class="goal-wrapper">
+<div class="input-group">
+<label class="goal-label">Meta do ciclo (padrão) (hh:mm:ss) <span class="info-inline" onclick="showInfo('metaCiclo')">!</span></label>
+<input type="text" id="goalTime" placeholder="00:00:00" inputmode="numeric" pattern="[0-9]*" autocomplete="off" oninput="formatGoalInput(this)">
+</div>
+</div>
+<div class="results-grid">
+<div class="result-box"><span class="info-icon" onclick="showInfo('amostras')">!</span><div class="result-title">AMOSTRAS (n)</div><span id="valSamples" class="result-value">0</span><span class="result-sub">Etapas</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoTotal')">!</span><div class="result-title">TEMPO TOTAL</div><span id="valTempoTotal" class="result-value" style="color:var(--text-main);">0.00s</span><span class="result-sub">Ciclo 100%</span></div>
+<div class="result-box setup-feature"><span class="info-icon" onclick="showInfo('setupTotal')">!</span><div class="result-title">SETUP TOTAL</div><span id="valTempoSetup" class="result-value">0.00s</span><span id="valPercSetup" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoHumano')">!</span><div class="result-title text-blue">TEMPO HUMANO</div><span id="valTempoPessoa" class="result-value text-blue">0.00s</span><span id="valPercPessoa" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoMaquina')">!</span><div class="result-title text-orange">TEMPO MÁQUINA</div><span id="valTempoMaquina" class="result-value text-orange">0.00s</span><span id="valPercMaquina" class="result-sub">0%</span></div>
+<div class="result-box"><span class="info-icon" onclick="showInfo('tempoProcesso')">!</span><div class="result-title text-purple">TEMPO PROCESSO</div><span id="valTempoProcesso" class="result-value text-purple">0.00s</span><span id="valPercProcesso" class="result-sub">0%</span></div>
+<div class="result-box" style="border-color: rgba(40, 167, 69, 0.5);"><span class="info-icon" onclick="showInfo('va')">!</span><div class="result-title text-green">VA (AGREGA VALOR)</div><span id="valTempoVA" class="result-value text-green">0.00s</span><span id="valPercVA" class="result-sub">0%</span></div>
+<div class="result-box" style="border-color: rgba(220, 53, 69, 0.5);"><span class="info-icon" onclick="showInfo('nva')">!</span><div class="result-title text-red">NVA (DESPERDÍCIO)</div><span id="valTempoNVA" class="result-value text-red">0.00s</span><span id="valPercNVA" class="result-sub">0%</span></div>
+<div class="result-box" style="border-color: rgba(255, 193, 7, 0.5);"><span class="info-icon" onclick="showInfo('bnva')">!</span><div class="result-title text-yellow">BNVA (NECESSÁRIO)</div><span id="valTempoBNVA" class="result-value text-yellow">0.00s</span><span id="valPercBNVA" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(142, 68, 173, 0.5);"><span class="info-icon" onclick="showInfo('setupInterno')">!</span><div class="result-title text-purple">SETUP INTERNO</div><span id="valTempoSetupInterno" class="result-value text-purple">0.00s</span><span id="valPercSetupInterno" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(0, 123, 255, 0.5);"><span class="info-icon" onclick="showInfo('setupExterno')">!</span><div class="result-title text-blue">SETUP EXTERNO</div><span id="valTempoSetupExterno" class="result-value text-blue">0.00s</span><span id="valPercSetupExterno" class="result-sub">0%</span></div>
+<div class="result-box setup-feature" style="border-color: rgba(108, 117, 125, 0.5);"><span class="info-icon" onclick="showInfo('smed')">!</span><div class="result-title">ANÁLISE SMED</div><span id="valSmedAnalysis" class="result-value">0%</span><span id="valSmedSub" class="result-sub">Sem setup</span></div>
+</div>
+</div>
+</div>
+<div class="col-2">
+<div class="card">
+<div class="chart-title" style="margin-top: 0;">Proporção do Ciclo e Qualidade do Tempo</div>
+<div class="gantt-wrapper" id="ganttChart"></div>
+<div class="chart-title" style="text-align: left; margin-top: 20px;">Detalhes das Etapas e Sequência</div>
+<div class="history-table-header print-only">
+<div>Nº</div><div>Tipo</div><div>Valor Agregado</div><div id="tableHeaderSetupCol">Setup</div><div>Tempo</div><div>%</div><div>Descrição da Atividade</div>
+</div>
+<div class="history-container" id="historyList"></div>
+<button class="btn-add-manual screen-only" onclick="openManualModal()">➕ Inserir Etapa Manual</button>
+<div class="config-grid" id="actionButtons" style="margin-top: 15px; grid-template-columns: 1fr 1fr 1fr 1fr;">
+<button id="btnExport" class="btn-export" onclick="exportToExcel()" disabled style="font-size:0.8rem;">⬇ CSV</button>
+<button id="btnPNG" class="btn-pdf" onclick="generatePNG()" disabled style="background:#17a2b8; color:white; font-size:0.8rem;">📷 PNG</button>
+<button id="btnPDF" class="btn-pdf" onclick="generateRealPDF()" disabled style="font-size:0.8rem;">📄 PDF</button>
+<button id="btnWhatsApp" class="btn-pdf" onclick="shareWhatsApp()" disabled style="background:#25D366; color:white; font-size:0.8rem;">💬 WhatsApp</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+    <footer class="app-footer" role="contentinfo">
+        <span class="footer-content">
+            Desenvolvido por
+            <a class="footer-link linkedin"
+               href="https://www.linkedin.com/in/pedro-ag-portela"
+               target="_blank"
+               rel="noopener noreferrer">
+                <span class="footer-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M19 0h-14c-2.76 0-5 2.24-5 5v14c0 2.76 2.24 5 5 5h14c2.76 0 5-2.24 5-5v-14c0-2.76-2.24-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.27c-.97 0-1.75-.8-1.75-1.77s.78-1.77 1.75-1.77 1.75.8 1.75 1.77-.78 1.77-1.75 1.77zm13.5 12.27h-3v-5.6c0-3.37-4-3.12-4 0v5.6h-3v-11h3v1.77c1.4-2.59 7-2.78 7 2.48v6.75z"/></svg>
+                </span>
+                Pedro Portela
+            </a>
+            <span class="footer-separator">·</span>
+            <a class="footer-link whatsapp"
+               href="https://wa.me/5541991771410?text=Olá%20tudo%20bem%3F%20Vim%20pelo%20aplicativo."
+               target="_blank"
+               rel="noopener noreferrer">
+                <span class="footer-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </span>
+                Fale comigo
+            </a>
+        </span>
+    </footer>
+
+<div class="fixed-bottom">
+<button id="btnLapPessoa" class="btn-lap-pessoa" onclick="recordElement('pessoa')" disabled><span class="lap-icon">🧍‍♂️</span><span class="lap-text">Humano</span></button>
+<button id="btnLapMaquina" class="btn-lap-maquina" onclick="recordElement('maquina')" disabled><span class="lap-icon">⚙️</span><span class="lap-text">Máquina</span></button>
+<button id="btnLapProcesso" class="btn-lap-processo" onclick="recordElement('processo')" disabled><span class="lap-icon">⏳</span><span class="lap-text">Espera</span></button>
+</div>
+
+<script>
+var glossario = {
+equipName: { title: 'Operação analisada', text: 'Identificação do estudo (equipamento/produto/operação). Esse nome aparece no relatório e também no arquivo exportado.' },
+metaCiclo: { title: 'Meta do ciclo (padrão) (hh:mm:ss)', text: 'Tempo-alvo total para concluir o ciclo padrão. Digite em hh:mm:ss (preenchimento da direita para a esquerda). Ao finalizar, o tempo total ficará VERDE se estiver dentro da meta e VERMELHO se exceder.' },
+amostras: { title: 'Etapas (n)', text: 'Quantidade de etapas registradas neste ciclo.' },
+tempoTotal: { title: 'Tempo total', text: 'Soma de todas as etapas registradas (Humano + Máquina + Espera). Representa 100% do ciclo analisado.' },
+tempoHumano: { title: 'Tempo humano', text: 'Tempo total de atividades executadas pelo operador (trabalho manual).' },
+tempoMaquina: { title: 'Tempo máquina', text: 'Tempo total em que a máquina executa a parte automática/mecânica da operação.' },
+tempoProcesso: { title: 'Tempo processo / espera', text: 'Tempo de espera, cura, resfriamento ou processo natural sem intervenção humana direta.' },
+va: { title: 'VA — Agrega valor', text: 'Atividade que transforma o produto/serviço de forma que o cliente reconhece valor direto.' },
+nva: { title: 'NVA — Não agrega valor', text: 'Atividade que não agrega valor ao cliente e representa desperdício.' },
+bnva: { title: 'BNVA — Necessário', text: 'Atividade que não agrega valor direto, mas é necessária no processo atual.' },
+setupTotal: { title: 'Setup Total', text: 'Soma do tempo de todas as etapas classificadas como Setup Interno (INT) ou Setup Externo (EXT). Representa o recorte total de setup dentro do ciclo analisado.' },
+setupInterno: { title: 'Setup Interno', text: 'Soma das etapas marcadas como INT — atividades de setup que só podem ser realizadas com a máquina parada. São a principal oportunidade de melhoria pelo método SMED.' },
+setupExterno: { title: 'Setup Externo', text: 'Soma das etapas marcadas como EXT — atividades de setup que já foram ou podem ser realizadas com a máquina em operação, reduzindo o tempo de parada.' },
+smed: { title: 'Análise SMED', text: 'Indica a porcentagem do setup total que ainda permanece como setup interno (INT ÷ Total × 100). Referência sugerida: até 30% = verde (setup maduro); 30% a 60% = amarelo (oportunidade moderada); acima de 60% = vermelho (alta oportunidade de externalização).' },
+gantt: { title: 'Gráfico do ciclo (Yamazumi)', text: 'Cada barra representa uma etapa proporcional ao tempo dela no ciclo. No relatório, cada etapa é identificada por 01, 02… logo abaixo da faixa VA (verde/vermelha).' },
+history: { title: 'Detalhes das etapas', text: 'Sequência das etapas com tipo, classificação, tempo, % do ciclo e descrição.' }
+};
+
+function showInfo(key) {
+var item = glossario[key];
+if (!item) return;
+document.getElementById('infoTitle').innerText = item.title;
+document.getElementById('infoText').innerText = item.text;
+document.getElementById('infoModal').style.display = 'flex';
+}
+function closeInfo() { document.getElementById('infoModal').style.display = 'none'; }
+
+var isRunning = false;
+var cycleStartTime = 0;
+var lastElementTime = 0;
+var elements = [];
+var elementCounterId = 0;
+var timerAnimation = null;
+var editingElementId = null;
+var STORAGE_KEY = 'cronoanalise_operacao_v237_setup';
+
+function getStudyType() {
+var studyTypeEl = document.getElementById('studyType');
+return studyTypeEl ? studyTypeEl.value : 'operacional';
+}
+function getStudyTypeLabel(v) {
+var value = v || getStudyType();
+return value === 'operacional_setup' ? 'Operacional/Setup' : 'Operacional';
+}
+function isSetupMode() { return getStudyType() === 'operacional_setup'; }
+function getSetupShortLabel(v) { if (v === 'interno') return 'INT'; if (v === 'externo') return 'EXT'; return 'N/A'; }
+function getSetupClass(v) { if (v === 'interno') return 'setup-interno'; if (v === 'externo') return 'setup-externo'; return 'setup-na'; }
+function normalizeElement(el) { var out = {}; for (var k in el) out[k] = el[k]; out.setup = el.setup || 'na'; return out; }
+
+function updateStudyModeUI() {
+var showSetup = isSetupMode();
+var banner = document.getElementById('studyTypeBanner');
+if (banner) banner.innerText = 'Estudo: ' + getStudyTypeLabel();
+var setupHeaderCol = document.getElementById('tableHeaderSetupCol');
+if (setupHeaderCol) setupHeaderCol.style.display = showSetup ? '' : 'none';
+var colsComSetup = '26px 68px 44px 44px 48px 36px 1fr';
+var colsSemSetup = '26px 68px 44px 48px 36px 1fr';
+var headerEl = document.querySelector('.history-table-header');
+if (headerEl) headerEl.style.gridTemplateColumns = showSetup ? colsComSetup : colsSemSetup;
+var setupCards = document.querySelectorAll('.setup-feature');
+for (var i = 0; i < setupCards.length; i++) setupCards[i].style.display = showSetup ? '' : 'none';
+}
+
+function handleStudyTypeChange() { updateStudyModeUI(); updateUI(); saveToStorage(); }
+
+function openManualModal(id) {
+editingElementId = id || null;
+if (editingElementId) {
+var el = elements.find(function(e){ return e.id === editingElementId; });
+document.getElementById('modalMainTitle').innerText = '✏️ Editar Etapa';
+document.getElementById('btnSaveManual').innerText = 'Salvar Ajuste';
+document.getElementById('manualDesc').value = el ? (el.desc || '') : '';
+document.getElementById('manualTime').value = el ? (el.time || '') : '';
+document.getElementById('manualUnit').value = '1';
+document.getElementById('manualType').value = el ? (el.type || 'processo') : 'processo';
+document.getElementById('manualVa').value = el ? (el.va || 'va') : 'va';
+document.getElementById('manualSetup').value = el ? (el.setup || 'na') : 'na';
+} else {
+document.getElementById('modalMainTitle').innerText = '➕ Adicionar Nova Etapa';
+document.getElementById('btnSaveManual').innerText = 'Adicionar';
+document.getElementById('manualDesc').value = '';
+document.getElementById('manualTime').value = '';
+document.getElementById('manualUnit').value = '1';
+document.getElementById('manualType').value = 'processo';
+document.getElementById('manualVa').value = 'va';
+document.getElementById('manualSetup').value = 'na';
+}
+document.getElementById('manualModal').style.display = 'flex';
+}
+function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; editingElementId = null; }
+
+function saveManualTime() {
+var timeInput = parseFloat(document.getElementById('manualTime').value);
+if (!timeInput || timeInput <= 0) { alert('Insira um tempo válido.'); return; }
+var unitMult = parseInt(document.getElementById('manualUnit').value, 10);
+var finalSeconds = timeInput * unitMult;
+var type = document.getElementById('manualType').value;
+var vaClass = document.getElementById('manualVa').value;
+var setupClass = document.getElementById('manualSetup').value;
+var desc = document.getElementById('manualDesc').value.trim();
+if (editingElementId) {
+var el = elements.find(function(e){ return e.id === editingElementId; });
+if (el) { el.time = finalSeconds; el.type = type; el.va = vaClass; el.desc = desc; el.setup = setupClass; }
+} else {
+elementCounterId++;
+elements.push({ id: elementCounterId, type: type, time: finalSeconds, va: vaClass, setup: setupClass, desc: desc });
+if (isRunning) cycleStartTime -= (finalSeconds * 1000);
+}
+closeManualModal(); updateUI(); saveToStorage();
+}
+
+function prepareCapture() {
+return new Promise(function(resolve){
+var equipName = document.getElementById('equipName').value.trim() || 'Não Informado';
+var analyst = document.getElementById('analystName').value.trim() || 'Não informado';
+document.getElementById('printEquipName').innerText = equipName;
+document.getElementById('printAnalyst').innerText = analyst;
+var hoje = new Date();
+document.getElementById('printDate').innerText = hoje.toLocaleDateString('pt-BR') + ' às ' + hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+document.body.classList.add('export-mode');
+var rows = document.querySelectorAll('.history-row');
+for (var i = 0; i < rows.length; i++) {
+var row = rows[i];
+var input = row.querySelector('.element-desc');
+var span = row.querySelector('.element-desc-print');
+if (input && span) {
+var itemId = Number(row.getAttribute('data-id'));
+var item = elements.find(function(e){ return e.id === itemId; });
+var setupPrefix = isSetupMode() && item ? '[' + getSetupShortLabel(item.setup) + '] ' : '';
+span.innerText = setupPrefix + (input.value || '—');
+}
+}
+setTimeout(function(){ resolve(document.getElementById('exportContainer')); }, 200);
+});
+}
+function restoreCapture() { document.body.classList.remove('export-mode'); }
+
+function downloadBlob(blob, fileName) { var url = URL.createObjectURL(blob); var link = document.createElement('a'); link.href = url; link.download = fileName; document.body.appendChild(link); link.click(); document.body.removeChild(link); setTimeout(function(){ URL.revokeObjectURL(url); }, 1500); }
+
+function generateImageBlob() {
+return prepareCapture().then(function(container){
+return html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false, windowWidth: container.scrollWidth, windowHeight: container.scrollHeight })
+.then(function(canvas){
+return new Promise(function(resolve, reject){ canvas.toBlob(function(blob){ blob ? resolve(blob) : reject(new Error('Falha ao converter canvas em PNG.')); }, 'image/png'); });
+})
+.finally(function(){ restoreCapture(); });
+});
+}
+
+function generatePNG() {
+var btn = document.getElementById('btnPNG'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true;
+generateImageBlob().then(function(blob){ downloadBlob(blob, 'Balanceamento_' + Date.now() + '.png'); })
+.catch(function(e){ console.error(e); alert('Erro ao gerar imagem.'); })
+.finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; });
+}
+
+function generatePDFBlob() {
+return generateImageBlob().then(function(pngBlob){
+return new Promise(function(resolve, reject){
+var reader = new FileReader();
+reader.onloadend = function(){
+try {
+var imgDataUrl = reader.result;
+var jsPDFCtor = window.jspdf.jsPDF;
+var pdf = new jsPDFCtor('p', 'mm', 'a4');
+var pdfW = pdf.internal.pageSize.getWidth();
+var pdfH = pdf.internal.pageSize.getHeight();
+var img = new Image();
+img.onload = function(){
+var imgWmm = pdfW; var imgHmm = img.height * (pdfW / img.width);
+if (imgHmm <= pdfH) pdf.addImage(imgDataUrl, 'PNG', 0, 0, imgWmm, imgHmm, undefined, 'FAST');
+else {
+var pxPerMm = img.width / pdfW; var pageHeightPx = pdfH * pxPerMm; var offsetPx = 0; var page = 0;
+while (offsetPx < img.height) {
+if (page > 0) pdf.addPage();
+var sliceH = Math.min(pageHeightPx, img.height - offsetPx);
+var c = document.createElement('canvas'); c.width = img.width; c.height = Math.ceil(sliceH);
+c.getContext('2d').drawImage(img, 0, -offsetPx);
+var sliceHmm = c.height / pxPerMm;
+pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, pdfW, sliceHmm, undefined, 'FAST');
+offsetPx += pageHeightPx; page++;
+}
+}
+resolve(pdf.output('blob'));
+};
+img.onerror = reject;
+img.src = imgDataUrl;
+} catch (err) { reject(err); }
+};
+reader.onerror = reject;
+reader.readAsDataURL(pngBlob);
+});
+});
+}
+
+function generateRealPDF() { var btn = document.getElementById('btnPDF'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true; generatePDFBlob().then(function(pdfBlob){ downloadBlob(pdfBlob, 'Balanceamento_' + Date.now() + '.pdf'); }).catch(function(e){ console.error(e); alert('Erro ao gerar relatório.'); }).finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; }); }
+
+function csvEscape(value) { var text = String(value == null ? '' : value).replace(/[\r\n]+/g, ' ').trim(); return text.replace(/;/g, ','); }
+function sanitizeFilename(name) { return String(name || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'arquivo'; }
+function getExecutiveSummaryText() { var execEl = document.getElementById('printExecutiveSummary'); return ((execEl && execEl.innerText) || '').trim(); }
+
+function getMetricsSnapshot() {
+function txt(id) { var el = document.getElementById(id); return ((el && el.innerText) || '').trim(); }
+return {
+equipName: document.getElementById('equipName').value.trim() || 'Operação não informada',
+samples: txt('valSamples'), total: txt('valTempoTotal'), pessoa: txt('valTempoPessoa'), percPessoa: txt('valPercPessoa'),
+maquina: txt('valTempoMaquina'), percMaquina: txt('valPercMaquina'), processo: txt('valTempoProcesso'), percProcesso: txt('valPercProcesso'),
+va: txt('valTempoVA'), percVA: txt('valPercVA'), nva: txt('valTempoNVA'), percNVA: txt('valPercNVA'), bnva: txt('valTempoBNVA'), percBNVA: txt('valPercBNVA')
+};
+}
+
+function buildWhatsAppSummary() {
+var m = getMetricsSnapshot(); var analyst = document.getElementById('analystName').value.trim() || 'Não informado';
+return ['📄 DADOS TÉCNICOS','🏭 *Operação:* ' + m.equipName,'👤 *Analista:* ' + analyst,'🔢 *Etapas registradas:* ' + m.samples,'','⏱️ *Tempo total do ciclo:* ' + m.total,'• 🧍 Humano: ' + m.pessoa + ' (' + m.percPessoa + ')','• ⚙️ Máquina: ' + m.maquina + ' (' + m.percMaquina + ')','• ⏳ Espera/Processo: ' + m.processo + ' (' + m.percProcesso + ')','','📊 *Análise de valor agregado*','• 🟢 VA: ' + m.va + ' (' + m.percVA + ')','• 🔴 NVA: ' + m.nva + ' (' + m.percNVA + ')','• 🟡 BNVA: ' + m.bnva + ' (' + m.percBNVA + ')','','📝 *RESUMO:*', getExecutiveSummaryText() || 'Resumo automático não disponível.'].join('\n');
+}
+
+function shareWhatsApp() {
+var btn = document.getElementById('btnWhatsApp'); var oldText = btn.innerText; btn.innerText = '⏳ ...'; btn.disabled = true;
+var equipName = document.getElementById('equipName').value.trim() || 'Operação não informada'; var safeBase = sanitizeFilename(equipName || 'cronoanalise'); var shareText = buildWhatsAppSummary();
+generateImageBlob().then(function(pngBlob){
+var pngFile = new File([pngBlob], 'Balanceamento_' + safeBase + '.png', { type: 'image/png' });
+if (navigator.share) {
+return Promise.resolve().then(function(){
+if (!navigator.canShare || navigator.canShare({ files: [pngFile] })) {
+return navigator.share({ title: 'Cronoanálise - ' + equipName, text: shareText, files: [pngFile] });
+} else { downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); }
+}).catch(function(){ downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank'); alert('O WhatsApp recebeu o resumo executivo. O PNG do relatório foi baixado no aparelho para anexar manualmente.'); });
+}
+downloadBlob(pngBlob, 'Balanceamento_' + safeBase + '.png'); window.open('https://wa.me/?text=' + encodeURIComponent(shareText + '\n\n📎 O PNG do relatório foi baixado no aparelho para anexar manualmente.'), '_blank');
+}).catch(function(e){ console.error(e); alert('Erro ao preparar compartilhamento no WhatsApp.'); }).finally(function(){ btn.innerText = oldText; btn.disabled = elements.length === 0; });
+}
+
+function exportToExcel() {
+if (elements.length === 0) return;
+var equipName = document.getElementById('equipName').value.trim() || 'Nao_Identificado'; var safeFileName = sanitizeFilename(equipName);
+var lines = ['Equipamento/Operacao;' + csvEscape(equipName), 'TipoEstudo;' + csvEscape(getStudyTypeLabel()), '', 'Ordem;Responsavel;Analise VA;Setup;Tempo (s);Descricao'];
+for (var i = 0; i < elements.length; i++) {
+var el = elements[i]; var tipo = el.type === 'pessoa' ? 'Operador' : (el.type === 'maquina' ? 'Maquina' : 'Processo/Espera'); var analise = (el.va || '').toUpperCase(); var setup = getSetupShortLabel(el.setup || 'na'); var tempo = String(el.time.toFixed(2)).replace('.', ','); var desc = csvEscape(el.desc || 'Sem descricao');
+lines.push((i + 1) + ';' + tipo + ';' + analise + ';' + setup + ';' + tempo + ';' + desc);
+}
+var csvContent = '\uFEFF' + lines.join('\r\n'); var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); downloadBlob(blob, 'balanceamento_' + safeFileName + '.csv');
+}
+
+/* [FIX 2] goalTime agora persiste no localStorage */
+function formatGoalInput(el) {
+var digitsRaw = String(el.value || '').replace(/\D/g, '').slice(-6);
+if (!digitsRaw) { el.value = ''; saveToStorage(); updateGoalStatus(); return; }
+var digits = digitsRaw.padStart(6, '0');
+el.value = digits.slice(0,2) + ':' + digits.slice(2,4) + ':' + digits.slice(4,6);
+try { el.setSelectionRange(el.value.length, el.value.length); } catch(e) {}
+saveToStorage();
+updateGoalStatus();
+}
+
+function getGoalSeconds() { var el = document.getElementById('goalTime'); if (!el) return null; var v = String(el.value || '').trim(); if (!v) return null; if (v.indexOf(':') >= 0) { var parts = v.split(':').map(function(p){ return parseInt(p, 10); }); if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2]; if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0] * 60 + parts[1]; return null; } var num = parseFloat(v.replace(',', '.')); if (!num || num <= 0) return null; return num; }
+
+function updateGoalStatus() { var goal = getGoalSeconds(); var liveEl = document.getElementById('liveTimer'); var totalEl = document.getElementById('valTempoTotal'); if (!totalEl) return; if (liveEl) liveEl.classList.remove('text-green', 'text-red'); totalEl.classList.remove('text-green', 'text-red'); if (!goal) return; var totalSec = 0; if (isRunning) totalSec = (Date.now() - cycleStartTime) / 1000; else totalSec = parseFloat((totalEl.innerText || '').replace('s','').trim().replace(',', '.')) || 0; var ok = totalSec <= goal; if (liveEl) liveEl.classList.add(ok ? 'text-green' : 'text-red'); totalEl.classList.add(ok ? 'text-green' : 'text-red'); }
+
+function formatTime(ms) { var totalSeconds = ms / 1000; if (totalSeconds < 3600) { var mins = Math.floor(totalSeconds / 60); var secs = Math.floor(totalSeconds % 60); var centis = Math.floor((ms % 1000) / 10); return String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0') + '.' + String(centis).padStart(2,'0'); } var hh = Math.floor(totalSeconds / 3600); var mm = Math.floor((totalSeconds % 3600) / 60); var ss = Math.floor(totalSeconds % 60); var mmm = Math.floor(ms % 1000); return String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0') + '.' + String(mmm).padStart(3,'0'); }
+
+function updateLiveTimer() {
+if (!isRunning) return;
+var now = Date.now(); var totalDiff = now - cycleStartTime; document.getElementById('liveTimer').innerText = formatTime(totalDiff);
+timerAnimation = requestAnimationFrame(updateLiveTimer);
+}
+
+function startTimer() {
+isRunning = true;
+var now = Date.now();
+if (elements.length > 0) {
+var pastTime = elements.reduce(function(acc, e){ return acc + e.time; }, 0) * 1000;
+cycleStartTime = now - pastTime; lastElementTime = now;
+} else { cycleStartTime = now; lastElementTime = now; elements = []; elementCounterId = 0; }
+document.getElementById('btnStart').disabled = true;
+document.getElementById('btnStop').disabled = false;
+document.getElementById('btnLapPessoa').disabled = false;
+document.getElementById('btnLapMaquina').disabled = false;
+document.getElementById('btnLapProcesso').disabled = false;
+document.getElementById('equipName').disabled = true;
+updateUI();
+if (timerAnimation) cancelAnimationFrame(timerAnimation);
+updateLiveTimer();
+}
+
+function stopTimer() {
+if (!isRunning) return;
+isRunning = false;
+if (timerAnimation) cancelAnimationFrame(timerAnimation);
+document.getElementById('btnStart').disabled = false;
+document.getElementById('btnStart').innerText = '▶ Retomar';
+document.getElementById('btnStop').disabled = true;
+document.getElementById('btnLapPessoa').disabled = true;
+document.getElementById('btnLapMaquina').disabled = true;
+document.getElementById('btnLapProcesso').disabled = true;
+document.getElementById('equipName').disabled = false;
+updateUI(); updateGoalStatus();
+}
+
+function recordElement(type) { if (!isRunning) return; var now = Date.now(); var rawTime = (now - lastElementTime) / 1000; var elementTime = Number(rawTime.toFixed(2)); elementCounterId++; elements.push({ id: elementCounterId, type: type, time: elementTime, va: 'va', setup: 'na', desc: '' }); lastElementTime = now; updateUI(); saveToStorage(); }
+
+function deleteElement(id) { elements = elements.filter(function(el){ return el.id !== id; }); updateUI(); saveToStorage(); }
+function toggleVA(id) { var el = elements.find(function(e){ return e.id === id; }); if (el) { if (el.va === 'va') el.va = 'nva'; else if (el.va === 'nva') el.va = 'bnva'; else el.va = 'va'; updateUI(); saveToStorage(); } }
+function toggleSetup(id) { var el = elements.find(function(e){ return e.id === id; }); if (el) { if ((el.setup || 'na') === 'na') el.setup = 'externo'; else if (el.setup === 'externo') el.setup = 'interno'; else el.setup = 'na'; updateUI(); saveToStorage(); } }
+function updateDesc(id, value) { var el = elements.find(function(e){ return e.id === id; }); if (el) el.desc = value; }
+
+function updateUI() {
+var n = elements.length;
+document.getElementById('valSamples').innerText = n;
+var totalPessoa = elements.filter(function(e){ return e.type === 'pessoa'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalMaquina = elements.filter(function(e){ return e.type === 'maquina'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalProcesso = elements.filter(function(e){ return e.type === 'processo'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalVA = elements.filter(function(e){ return e.va === 'va'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalNVA = elements.filter(function(e){ return e.va === 'nva'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalBNVA = elements.filter(function(e){ return e.va === 'bnva'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalSetupInterno = elements.filter(function(e){ return (e.setup || 'na') === 'interno'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalSetupExterno = elements.filter(function(e){ return (e.setup || 'na') === 'externo'; }).reduce(function(acc,e){ return acc + e.time; }, 0);
+var totalSetup = totalSetupInterno + totalSetupExterno;
+var totalGeral = totalPessoa + totalMaquina + totalProcesso;
+var smedRatio = totalSetup > 0 ? ((totalSetupInterno / totalSetup) * 100).toFixed(1) : '0.0';
+
+function setIf(id, value) { var el = document.getElementById(id); if (el) el.innerText = value; }
+setIf('valTempoPessoa', totalPessoa.toFixed(2) + 's'); setIf('valTempoMaquina', totalMaquina.toFixed(2) + 's'); setIf('valTempoProcesso', totalProcesso.toFixed(2) + 's'); setIf('valTempoVA', totalVA.toFixed(2) + 's'); setIf('valTempoNVA', totalNVA.toFixed(2) + 's'); setIf('valTempoBNVA', totalBNVA.toFixed(2) + 's'); setIf('valTempoTotal', totalGeral.toFixed(2) + 's');
+setIf('valTempoSetup', totalSetup.toFixed(2) + 's'); setIf('valTempoSetupInterno', totalSetupInterno.toFixed(2) + 's'); setIf('valTempoSetupExterno', totalSetupExterno.toFixed(2) + 's');
+setIf('valSmedAnalysis', smedRatio + '%');
+var smedEl = document.getElementById('valSmedAnalysis');
+if (smedEl) {
+smedEl.classList.remove('text-green', 'text-yellow', 'text-red');
+if (totalSetup > 0) {
+var ratio = parseFloat(smedRatio);
+if (ratio <= 30) smedEl.classList.add('text-green');
+else if (ratio <= 60) smedEl.classList.add('text-yellow');
+else smedEl.classList.add('text-red');
+}
+}
+setIf('valSmedSub', totalSetup > 0 ? totalSetupInterno.toFixed(2) + 's INT de ' + totalSetup.toFixed(2) + 's' : 'Sem setup classificado');
+
+var pPessoa = '0.0', pMaquina = '0.0', pProcesso = '0.0', pVA = '0.0', pNVA = '0.0', pBNVA = '0.0', pSetup = '0.0', pSetupInterno = '0.0', pSetupExterno = '0.0';
+if (totalGeral > 0) {
+pPessoa = ((totalPessoa / totalGeral) * 100).toFixed(1); pMaquina = ((totalMaquina / totalGeral) * 100).toFixed(1); pProcesso = ((totalProcesso / totalGeral) * 100).toFixed(1); pVA = ((totalVA / totalGeral) * 100).toFixed(1); pNVA = ((totalNVA / totalGeral) * 100).toFixed(1); pBNVA = ((totalBNVA / totalGeral) * 100).toFixed(1); pSetup = ((totalSetup / totalGeral) * 100).toFixed(1); pSetupInterno = ((totalSetupInterno / totalGeral) * 100).toFixed(1); pSetupExterno = ((totalSetupExterno / totalGeral) * 100).toFixed(1);
+}
+setIf('valPercPessoa', pPessoa + '%'); setIf('valPercMaquina', pMaquina + '%'); setIf('valPercProcesso', pProcesso + '%'); setIf('valPercVA', pVA + '%'); setIf('valPercNVA', pNVA + '%'); setIf('valPercBNVA', pBNVA + '%'); setIf('valPercSetup', pSetup + '%'); setIf('valPercSetupInterno', pSetupInterno + '%'); setIf('valPercSetupExterno', pSetupExterno + '%');
+
+if (n > 0) {
+if (isSetupMode()) document.getElementById('printExecutiveSummary').innerText = 'Estudo operacional com recorte de setup contendo ' + n + ' etapas e ciclo total de ' + totalGeral.toFixed(2) + 's. A distribuição do ciclo ocorreu com ' + pPessoa + '% de trabalho humano, ' + pMaquina + '% de atuação mecânica e ' + pProcesso + '% de espera/processo. Dentro desse total, ' + pSetup + '% correspondeu a atividades de setup, sendo ' + pSetupInterno + '% setup interno e ' + pSetupExterno + '% setup externo. O indicador SMED aponta que ' + smedRatio + '% do setup total ainda permanece interno, indicando o tamanho da oportunidade de externalização.';
+else document.getElementById('printExecutiveSummary').innerText = 'Estudo de balanceamento de operação com ' + n + ' etapas registradas. O ciclo total medido foi de ' + totalGeral.toFixed(2) + 's. A distribuição do ciclo ocorreu com ' + pPessoa + '% de trabalho humano, ' + pMaquina + '% de atuação mecânica (máquina) e ' + pProcesso + '% de tempo de espera ou processo natural. Na análise de qualidade do tempo, apurou-se que ' + pVA + '% da operação agrega valor direto (VA), ' + pBNVA + '% é de trabalho não agregador porém incidentalmente necessário (BNVA), e ' + pNVA + '% foi classificado como desperdício ou ineficiência (NVA).';
+} else document.getElementById('printExecutiveSummary').innerText = '—';
+
+document.getElementById('btnPDF').disabled = n === 0; document.getElementById('btnPNG').disabled = n === 0; document.getElementById('btnExport').disabled = n === 0; document.getElementById('btnWhatsApp').disabled = n === 0;
+renderHistory(); renderGantt(totalGeral); updateStudyModeUI(); updateGoalStatus();
+}
+
+function renderHistory() {
+var list = document.getElementById('historyList'); list.innerHTML = '';
+var totalGeral = elements.reduce(function(acc,e){ return acc + e.time; }, 0);
+var showSetup = isSetupMode();
+
+elements.forEach(function(el, index){
+var row = document.createElement('div'); row.className = 'history-row'; row.setAttribute('data-index', index); row.setAttribute('data-id', el.id);
+var colsComSetup = '26px 68px 44px 44px 48px 36px 1fr';
+var colsSemSetup = '26px 68px 44px 48px 36px 1fr';
+row.style.gridTemplateColumns = showSetup ? colsComSetup : colsSemSetup;
+
+var badgeClass = el.type === 'pessoa' ? 'badge-pessoa' : (el.type === 'maquina' ? 'badge-maquina' : 'badge-processo');
+var icon = el.type === 'pessoa' ? '🧍‍♂️' : (el.type === 'maquina' ? '⚙️' : '⏳');
+var typeText = el.type === 'pessoa' ? 'Operador' : (el.type === 'maquina' ? 'Máquina' : 'Espera');
+var placeholderStr = el.type === 'pessoa' ? 'Ação humana...' : (el.type === 'maquina' ? 'Ação mecânica...' : 'Processo/Espera...');
+var vaClass = el.va === 'va' ? 'is-va' : (el.va === 'nva' ? 'is-nva' : 'is-bnva');
+var vaText = el.va.toUpperCase();
+var setupClass = getSetupClass(el.setup || 'na'); var setupText = getSetupShortLabel(el.setup || 'na');
+
+var dragHandle = document.createElement('span'); dragHandle.className = 'drag-handle screen-only'; dragHandle.textContent = '☰'; row.appendChild(dragHandle);
+var idPrint = document.createElement('span'); idPrint.className = 'history-id print-only'; idPrint.textContent = '#' + (index + 1); row.appendChild(idPrint);
+
+var typeBadge = document.createElement('div'); typeBadge.className = 'type-badge ' + badgeClass; var typeInline = document.createElement('span'); typeInline.className = 'type-inline'; var iconSpan = document.createElement('span'); iconSpan.className = 'type-icon'; iconSpan.textContent = icon; var labelSpan = document.createElement('span'); labelSpan.className = 'type-label print-only'; labelSpan.textContent = typeText; typeInline.appendChild(iconSpan); typeInline.appendChild(labelSpan); typeBadge.appendChild(typeInline); row.appendChild(typeBadge);
+
+var vaBtn = document.createElement('button'); vaBtn.className = 'badge-va ' + vaClass + ' screen-only'; vaBtn.textContent = vaText; vaBtn.onclick = function(){ toggleVA(el.id); }; row.appendChild(vaBtn);
+var vaPrint = document.createElement('div'); vaPrint.className = 'badge-va ' + vaClass + ' print-only'; vaPrint.textContent = vaText; row.appendChild(vaPrint);
+
+if (showSetup) {
+var setupBtn = document.createElement('button'); setupBtn.className = 'badge-setup ' + setupClass + ' screen-only'; setupBtn.textContent = setupText; setupBtn.onclick = function(){ toggleSetup(el.id); }; row.appendChild(setupBtn);
+var setupPrint = document.createElement('div'); setupPrint.className = 'badge-setup ' + setupClass + ' print-only'; setupPrint.textContent = setupText; row.appendChild(setupPrint);
+}
+
+var timeSpan = document.createElement('span'); timeSpan.className = 'history-time'; timeSpan.textContent = el.time.toFixed(1) + 's'; row.appendChild(timeSpan);
+var percSpan = document.createElement('span'); percSpan.className = 'history-perc print-only'; var perc = totalGeral > 0 ? ((el.time / totalGeral) * 100).toFixed(1) : '0.0'; percSpan.textContent = perc + '%'; row.appendChild(percSpan);
+
+/* [FIX 1] onblur agora chama saveToStorage para persistir descrições */
+var input = document.createElement('input'); input.type = 'text'; input.className = 'element-desc screen-only'; input.placeholder = placeholderStr; input.value = el.desc || '';
+input.oninput = function(){ updateDesc(el.id, input.value); };
+input.onblur = function(){ updateDesc(el.id, input.value); saveToStorage(); updateUI(); };
+row.appendChild(input);
+
+var descPrint = document.createElement('span'); descPrint.className = 'element-desc-print print-only'; var prefix = showSetup ? '[' + setupText + '] ' : ''; if (el.desc && el.desc.trim()) descPrint.textContent = prefix + el.desc; else { descPrint.textContent = prefix + placeholderStr.replace('...','').trim(); descPrint.classList.add('desc-placeholder'); } row.appendChild(descPrint);
+
+var btnEdit = document.createElement('button'); btnEdit.className = 'btn-edit screen-only'; btnEdit.textContent = '✏️'; btnEdit.onclick = function(){ openManualModal(el.id); }; row.appendChild(btnEdit);
+var btnDelete = document.createElement('button'); btnDelete.className = 'btn-delete screen-only'; btnDelete.textContent = '🗑'; btnDelete.onclick = function(){ deleteElement(el.id); }; row.appendChild(btnDelete);
+
+list.appendChild(row);
+});
+setupDragAndDrop();
+}
+
+function setupDragAndDrop() {
+var rows = document.querySelectorAll('.history-row'); var draggedIdx = null; var touchY = 0;
+rows.forEach(function(row){
+var handle = row.querySelector('.drag-handle'); if (!handle) return; row.setAttribute('draggable', true);
+row.addEventListener('dragstart', function(){ draggedIdx = parseInt(row.getAttribute('data-index'), 10); row.classList.add('dragging'); });
+row.addEventListener('dragover', function(e){ e.preventDefault(); });
+row.addEventListener('drop', function(e){ e.preventDefault(); var targetIdx = parseInt(row.getAttribute('data-index'), 10); if (draggedIdx !== null && draggedIdx !== targetIdx) moveElement(draggedIdx, targetIdx); row.classList.remove('dragging'); });
+row.addEventListener('dragend', function(){ row.classList.remove('dragging'); draggedIdx = null; });
+handle.addEventListener('touchstart', function(){ draggedIdx = parseInt(row.getAttribute('data-index'), 10); row.classList.add('dragging'); document.body.style.overflow = 'hidden'; }, { passive: false });
+handle.addEventListener('touchmove', function(e){ e.preventDefault(); touchY = e.touches[0].clientY; }, { passive: false });
+handle.addEventListener('touchend', function(e){ row.classList.remove('dragging'); document.body.style.overflow = 'auto'; var targetElement = document.elementFromPoint(e.changedTouches[0].clientX, touchY); var targetRow = targetElement ? targetElement.closest('.history-row') : null; if (targetRow) { var targetIdx = parseInt(targetRow.getAttribute('data-index'), 10); if (draggedIdx !== null && draggedIdx !== targetIdx) moveElement(draggedIdx, targetIdx); } draggedIdx = null; });
+});
+}
+
+function moveElement(fromIdx, toIdx) { var movedEl = elements.splice(fromIdx, 1)[0]; elements.splice(toIdx, 0, movedEl); updateUI(); saveToStorage(); }
+
+function renderGantt(totalGeral) {
+var chart = document.getElementById('ganttChart'); chart.innerHTML = ''; if (totalGeral === 0) return;
+elements.forEach(function(el, idx){
+var percentage = (el.time / totalGeral) * 100; var block = document.createElement('div'); var blockColorClass = el.type === 'pessoa' ? 'gantt-pessoa' : (el.type === 'maquina' ? 'gantt-maquina' : 'gantt-processo'); block.className = 'gantt-block ' + blockColorClass; block.style.width = percentage + '%'; var vaColor = 'var(--green)'; if (el.va === 'nva') vaColor = 'var(--red)'; else if (el.va === 'bnva') vaColor = 'var(--yellow)'; var showLabel = percentage >= 7.5; block.innerHTML = '<div class="gantt-main-bar">' + (showLabel ? (el.time.toFixed(1) + 's') : '') + '</div><div class="gantt-va-line" style="border-bottom: 4px solid ' + vaColor + ';"></div><div class="gantt-idx print-only">' + String(idx + 1).padStart(2, '0') + '</div>'; chart.appendChild(block);
+});
+}
+
+function saveToStorage() { var config = { equipName: document.getElementById('equipName').value, analystName: document.getElementById('analystName').value, goalTime: document.getElementById('goalTime').value, studyType: document.getElementById('studyType').value }; localStorage.setItem(STORAGE_KEY, JSON.stringify({ config: config, elements: elements, elementCounterId: elementCounterId })); }
+function loadFromStorage() { try { var raw = localStorage.getItem(STORAGE_KEY); if (!raw) return; var data = JSON.parse(raw); if (data.config) { document.getElementById('equipName').value = data.config.equipName || ''; document.getElementById('analystName').value = data.config.analystName || ''; document.getElementById('goalTime').value = data.config.goalTime || ''; document.getElementById('studyType').value = data.config.studyType || 'operacional'; } if (Array.isArray(data.elements) && data.elements.length > 0) { elements = data.elements.map(normalizeElement); elementCounterId = data.elementCounterId || elements.length; } } catch (e) { console.warn('Erro ao carregar sessão salva:', e); } }
+
+function resetTimer() { if (elements.length > 0 && !confirm('Deseja apagar os dados deste ciclo?')) return; isRunning = false; if (timerAnimation) cancelAnimationFrame(timerAnimation); elements = []; elementCounterId = 0; document.getElementById('liveTimer').innerText = '00:00.00'; document.getElementById('btnStart').disabled = false; document.getElementById('btnStart').innerText = '▶ Iniciar'; document.getElementById('btnStop').disabled = true; document.getElementById('btnLapPessoa').disabled = true; document.getElementById('btnLapMaquina').disabled = true; document.getElementById('btnLapProcesso').disabled = true; document.getElementById('equipName').disabled = false; localStorage.removeItem(STORAGE_KEY); updateUI(); updateGoalStatus(); }
+
+function bindStaticButtons() {
+var map = {
+btnStart: startTimer, btnStop: stopTimer, btnReset: resetTimer, btnExport: exportToExcel, btnPNG: generatePNG, btnPDF: generateRealPDF, btnWhatsApp: shareWhatsApp, btnSaveManual: saveManualTime,
+btnLapPessoa: function(){ recordElement('pessoa'); }, btnLapMaquina: function(){ recordElement('maquina'); }, btnLapProcesso: function(){ recordElement('processo'); }
+};
+Object.keys(map).forEach(function(id){ var el = document.getElementById(id); if (el) el.onclick = map[id]; });
+var studyTypeEl = document.getElementById('studyType'); if (studyTypeEl) studyTypeEl.onchange = handleStudyTypeChange;
+}
+
+/* [FIX 5] window.* assignments removidos — funções já são globais por definição */
+
+document.addEventListener('DOMContentLoaded', function(){ bindStaticButtons(); loadFromStorage(); updateStudyModeUI(); updateUI(); });
+</script>
+
+<script>
+(function(){
+try{
+var k='operix_theme_v1';
+var saved=localStorage.getItem(k);
+// Padrão sempre escuro: se não tiver valor salvo, força dark explicitamente
+if(saved === null || saved === undefined){
+  localStorage.setItem(k, 'dark');
+  saved = 'dark';
+}
+if(saved === 'light'){
+  document.documentElement.setAttribute('data-theme','light');
+} else {
+  document.documentElement.removeAttribute('data-theme');
+}
+function render(){
+  var btn=document.getElementById('op-theme-btn');
+  if(!btn) return;
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  btn.textContent = isLight ? '🌙' : '☀️';
+  btn.title = isLight ? 'Tema claro ativo — clique para escuro' : 'Tema escuro ativo — clique para claro';
+}
+window.__opToggleTheme=function(){
+  var cur=document.documentElement.getAttribute('data-theme')==='light';
+  if(cur){
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(k,'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme','light');
+    localStorage.setItem(k,'light');
+  }
+  render();
+};
+document.addEventListener('DOMContentLoaded',function(){
+  if(!document.getElementById('op-theme-btn')){
+    var b=document.createElement('button');
+    b.id='op-theme-btn'; b.type='button';
+    b.setAttribute('aria-label','Alternar tema claro/escuro');
+    b.onclick=window.__opToggleTheme;
+    document.body.appendChild(b);
+  }
+  render();
+});
+}catch(e){}
+})();
+</script>
+
+<!-- [FIX 4] Service Worker registrado — PWA funcional -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js')
+      .then(function(reg) { console.log('[SW] Registrado:', reg.scope); })
+      .catch(function(e) { console.warn('[SW] Falha ao registrar:', e); });
+  });
+}
+</script>
+
+
+<!-- Splash Screen logic -->
+<script>
+(function () {
+  var splash = document.getElementById('splashScreen');
+  var bar = document.getElementById('splashBar');
+  if (!splash || !bar) return;
+
+  var progress = 0;
+  var DURATION = 2200; // ms total
+  var INTERVAL = 40;   // ms por tick
+  var STEP = (100 / (DURATION / INTERVAL));
+
+  var timer = setInterval(function () {
+    progress = Math.min(progress + STEP, 100);
+    bar.style.width = progress + '%';
+    if (progress >= 100) {
+      clearInterval(timer);
+      setTimeout(function () {
+        splash.classList.add('splash-hidden');
+        splash.addEventListener('transitionend', function () {
+          splash.remove();
+        }, { once: true });
+      }, 300);
+    }
+  }, INTERVAL);
+})();
+</script>
+
+</body>
+</html>
