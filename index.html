@@ -982,7 +982,7 @@ else if (ratio <= 60) smedEl.classList.add('text-yellow');
 else smedEl.classList.add('text-red');
 }
 }
-setIf('valSmedSub', totalSetup > 0 ? totalSetupInterno.toFixed(2) + 's INT de ' + totalSetup.toFixed(2) + 's' : 'Sem setup classificado');
+setIf('valSmedSub', totalSetup > 0 ? totalSetupInterno.toFixed(2) + 's INT de ' + totalSetup.toFixed(2) + 's' : 'Sem dependência');
 
 var pPessoa = '0.0', pMaquina = '0.0', pProcesso = '0.0', pVA = '0.0', pNVA = '0.0', pBNVA = '0.0', pSetup = '0.0', pSetupInterno = '0.0', pSetupExterno = '0.0';
 if (totalGeral > 0) {
@@ -991,8 +991,18 @@ pPessoa = ((totalPessoa / totalGeral) * 100).toFixed(1); pMaquina = ((totalMaqui
 setIf('valPercPessoa', pPessoa + '%'); setIf('valPercMaquina', pMaquina + '%'); setIf('valPercProcesso', pProcesso + '%'); setIf('valPercVA', pVA + '%'); setIf('valPercNVA', pNVA + '%'); setIf('valPercBNVA', pBNVA + '%'); setIf('valPercSetup', pSetup + '%'); setIf('valPercSetupInterno', pSetupInterno + '%'); setIf('valPercSetupExterno', pSetupExterno + '%');
 
 if (n > 0) {
-if (isSetupMode()) document.getElementById('printExecutiveSummary').innerText = 'Estudo operacional com recorte de setup contendo ' + n + ' etapas e ciclo total de ' + totalGeral.toFixed(2) + 's. A distribuição do ciclo ocorreu com ' + pPessoa + '% de trabalho humano, ' + pMaquina + '% de atuação mecânica e ' + pProcesso + '% de espera/processo. Dentro desse total, ' + pSetup + '% correspondeu a atividades de setup, sendo ' + pSetupInterno + '% setup interno e ' + pSetupExterno + '% setup externo. O indicador SMED aponta que ' + smedRatio + '% do setup total ainda permanece interno, indicando o tamanho da oportunidade de externalização.';
-else document.getElementById('printExecutiveSummary').innerText = 'Estudo de balanceamento de operação com ' + n + ' etapas registradas. O ciclo total medido foi de ' + totalGeral.toFixed(2) + 's. A distribuição do ciclo ocorreu com ' + pPessoa + '% de trabalho humano, ' + pMaquina + '% de atuação mecânica (máquina) e ' + pProcesso + '% de tempo de espera ou processo natural. Na análise de qualidade do tempo, apurou-se que ' + pVA + '% da operação agrega valor direto (VA), ' + pBNVA + '% é de trabalho não agregador porém incidentalmente necessário (BNVA), e ' + pNVA + '% foi classificado como desperdício ou ineficiência (NVA).';
+var top5 = elements.slice().sort(function(a,b){ return b.time - a.time; }).slice(0, Math.min(5, n));
+var top5Text = top5.map(function(e, i){ return (i+1) + '. ' + (e.desc || getTypeLabel(e.type)) + ' (' + e.time.toFixed(1) + 's)'; }).join('; ');
+var nvaEls = elements.filter(function(e){ return e.va === 'nva'; });
+var nvaTime = nvaEls.reduce(function(acc,e){ return acc + e.time; }, 0);
+var gainEst = totalGeral > 0 ? ((nvaTime / totalGeral) * 100).toFixed(1) : '0.0';
+var execText = 'Análise Lean Office com ' + n + ' etapa(s). Lead Time total: ' + totalGeral.toFixed(1) + 's. ';
+execText += 'Distribuição: Touch Time ' + pPessoa + '% | Sistema ' + pMaquina + '% | Espera ' + pProcesso + '%. ';
+execText += 'Qualidade: VA=' + pVA + '% | NVA=' + pNVA + '% | BNVA=' + pBNVA + '%. ';
+if (isSetupMode() && totalSetup > 0) execText += 'Dependências: ' + pSetup + '% do Lead Time (' + pSetupInterno + '% interna, ' + pSetupExterno + '% externa). Índice: ' + smedRatio + '%. ';
+execText += 'Top 5 gargalos: ' + top5Text + '. ';
+execText += nvaEls.length > 0 ? nvaEls.length + ' etapa(s) NVA — potencial de ganho ao eliminar: até -' + gainEst + '% no Lead Time.' : 'Nenhuma etapa NVA identificada.';
+document.getElementById('printExecutiveSummary').innerText = execText;
 } else document.getElementById('printExecutiveSummary').innerText = '—';
 
 document.getElementById('btnPDF').disabled = n === 0; document.getElementById('btnPNG').disabled = n === 0; document.getElementById('btnExport').disabled = n === 0; document.getElementById('btnWhatsApp').disabled = n === 0;
@@ -1002,21 +1012,21 @@ renderHistory(); renderGantt(totalGeral); updateStudyModeUI(); updateGoalStatus(
 function renderHistory() {
 var list = document.getElementById('historyList'); list.innerHTML = '';
 var totalGeral = elements.reduce(function(acc,e){ return acc + e.time; }, 0);
-var showSetup = isSetupMode();
+var showDep = isSetupMode();
 
 elements.forEach(function(el, index){
 var row = document.createElement('div'); row.className = 'history-row'; row.setAttribute('data-index', index); row.setAttribute('data-id', el.id);
-var colsComSetup = '26px 68px 44px 44px 48px 36px 1fr';
-var colsSemSetup = '26px 68px 44px 48px 36px 1fr';
-row.style.gridTemplateColumns = showSetup ? colsComSetup : colsSemSetup;
+var colsComDep = '26px 68px 44px 44px 48px 36px 1fr';
+var colsSemDep = '26px 68px 44px 48px 36px 1fr';
+row.style.gridTemplateColumns = showDep ? colsComDep : colsSemDep;
 
 var badgeClass = el.type === 'pessoa' ? 'badge-pessoa' : (el.type === 'maquina' ? 'badge-maquina' : 'badge-processo');
-var icon = el.type === 'pessoa' ? '🧍‍♂️' : (el.type === 'maquina' ? '⚙️' : '⏳');
-var typeText = el.type === 'pessoa' ? 'Operador' : (el.type === 'maquina' ? 'Máquina' : 'Espera');
-var placeholderStr = el.type === 'pessoa' ? 'Ação humana...' : (el.type === 'maquina' ? 'Ação mecânica...' : 'Processo/Espera...');
+var icon = getTypeIcon(el.type);
+var typeText = getTypeLabel(el.type);
+var placeholderStr = getTypePlaceholder(el.type);
 var vaClass = el.va === 'va' ? 'is-va' : (el.va === 'nva' ? 'is-nva' : 'is-bnva');
 var vaText = el.va.toUpperCase();
-var setupClass = getSetupClass(el.setup || 'na'); var setupText = getSetupShortLabel(el.setup || 'na');
+var depClass = getSetupClass(el.setup || 'na'); var depText = getSetupShortLabel(el.setup || 'na');
 
 var dragHandle = document.createElement('span'); dragHandle.className = 'drag-handle screen-only'; dragHandle.textContent = '☰'; row.appendChild(dragHandle);
 var idPrint = document.createElement('span'); idPrint.className = 'history-id print-only'; idPrint.textContent = '#' + (index + 1); row.appendChild(idPrint);
@@ -1026,21 +1036,20 @@ var typeBadge = document.createElement('div'); typeBadge.className = 'type-badge
 var vaBtn = document.createElement('button'); vaBtn.className = 'badge-va ' + vaClass + ' screen-only'; vaBtn.textContent = vaText; vaBtn.onclick = function(){ toggleVA(el.id); }; row.appendChild(vaBtn);
 var vaPrint = document.createElement('div'); vaPrint.className = 'badge-va ' + vaClass + ' print-only'; vaPrint.textContent = vaText; row.appendChild(vaPrint);
 
-if (showSetup) {
-var setupBtn = document.createElement('button'); setupBtn.className = 'badge-setup ' + setupClass + ' screen-only'; setupBtn.textContent = setupText; setupBtn.onclick = function(){ toggleSetup(el.id); }; row.appendChild(setupBtn);
-var setupPrint = document.createElement('div'); setupPrint.className = 'badge-setup ' + setupClass + ' print-only'; setupPrint.textContent = setupText; row.appendChild(setupPrint);
+if (showDep) {
+var depBtn = document.createElement('button'); depBtn.className = 'badge-setup ' + depClass + ' screen-only'; depBtn.textContent = depText; depBtn.onclick = function(){ toggleSetup(el.id); }; row.appendChild(depBtn);
+var depPrint = document.createElement('div'); depPrint.className = 'badge-setup ' + depClass + ' print-only'; depPrint.textContent = depText; row.appendChild(depPrint);
 }
 
 var timeSpan = document.createElement('span'); timeSpan.className = 'history-time'; timeSpan.textContent = el.time.toFixed(1) + 's'; row.appendChild(timeSpan);
 var percSpan = document.createElement('span'); percSpan.className = 'history-perc print-only'; var perc = totalGeral > 0 ? ((el.time / totalGeral) * 100).toFixed(1) : '0.0'; percSpan.textContent = perc + '%'; row.appendChild(percSpan);
 
-/* [FIX 1] onblur agora chama saveToStorage para persistir descrições */
 var input = document.createElement('input'); input.type = 'text'; input.className = 'element-desc screen-only'; input.placeholder = placeholderStr; input.value = el.desc || '';
 input.oninput = function(){ updateDesc(el.id, input.value); };
 input.onblur = function(){ updateDesc(el.id, input.value); saveToStorage(); updateUI(); };
 row.appendChild(input);
 
-var descPrint = document.createElement('span'); descPrint.className = 'element-desc-print print-only'; var prefix = showSetup ? '[' + setupText + '] ' : ''; if (el.desc && el.desc.trim()) descPrint.textContent = prefix + el.desc; else { descPrint.textContent = prefix + placeholderStr.replace('...','').trim(); descPrint.classList.add('desc-placeholder'); } row.appendChild(descPrint);
+var descPrint = document.createElement('span'); descPrint.className = 'element-desc-print print-only'; var prefix = showDep ? '[' + depText + '] ' : ''; if (el.desc && el.desc.trim()) descPrint.textContent = prefix + el.desc; else { descPrint.textContent = prefix + placeholderStr.replace('...','').trim(); descPrint.classList.add('desc-placeholder'); } row.appendChild(descPrint);
 
 var btnEdit = document.createElement('button'); btnEdit.className = 'btn-edit screen-only'; btnEdit.textContent = '✏️'; btnEdit.onclick = function(){ openManualModal(el.id); }; row.appendChild(btnEdit);
 var btnDelete = document.createElement('button'); btnDelete.className = 'btn-delete screen-only'; btnDelete.textContent = '🗑'; btnDelete.onclick = function(){ deleteElement(el.id); }; row.appendChild(btnDelete);
