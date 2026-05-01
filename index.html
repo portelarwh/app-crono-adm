@@ -388,10 +388,12 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <div class="modal-overlay" id="manualModal">
 <div class="modal-content">
 <div class="modal-title" id="modalMainTitle">➕ Inserir/Editar Etapa</div>
+
 <div class="input-group" style="margin-bottom: 10px; text-align: left;">
 <label>Descrição da Etapa</label>
-<input type="text" id="manualDesc" placeholder="Ex: Esfriando bolo...">
+<input type="text" id="manualDesc" placeholder="Ex: Análise de documento...">
 </div>
+
 <div class="config-grid" style="margin-bottom: 10px; text-align: left;">
 <div class="input-group">
 <label>Duração</label>
@@ -405,34 +407,80 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 </select>
 </div>
 </div>
+
+<div class="config-grid" style="margin-bottom: 10px; text-align: left;">
+<div class="input-group">
+<label>Tipo</label>
+<select id="manualType">
+<option value="processo">⏸️ Espera</option>
+<option value="maquina">💻 Sistema</option>
+<option value="pessoa" selected>📋 Atendimento</option>
+</select>
+</div>
+<div class="input-group">
+<label>Classificação VA</label>
+<select id="manualVa">
+<option value="va" selected>VA — Agrega Valor</option>
+<option value="nva">NVA — Desperdício</option>
+<option value="bnva">BNVA — Controle</option>
+</select>
+</div>
+</div>
+
+<div class="input-group" style="margin-bottom: 10px; text-align: left;">
+<label>Dependência</label>
+<select id="manualSetup">
+<option value="na" selected>Sem Dependência</option>
+<option value="externo">EXT — Dep. Externa</option>
+<option value="interno">INT — Dep. Interna</option>
+</select>
+</div>
+
+<div class="modal-admin-divider">📁 Campos Administrativos</div>
+
+<div class="config-grid" style="margin-bottom: 8px; text-align: left;">
+<div class="input-group">
+<label>Área</label>
+<input type="text" id="manualArea" placeholder="Ex: Financeiro">
+</div>
+<div class="input-group">
+<label>Solicitante</label>
+<input type="text" id="manualRequester" placeholder="Ex: Maria S.">
+</div>
+</div>
+
+<div class="config-grid" style="margin-bottom: 8px; text-align: left;">
+<div class="input-group">
+<label>Tipo de Demanda</label>
+<input type="text" id="manualDemandType" placeholder="Ex: Aprovação">
+</div>
+<div class="input-group">
+<label>SLA (h)</label>
+<input type="number" id="manualSla" placeholder="Ex: 24" min="0" step="1">
+</div>
+</div>
+
 <div class="config-grid" style="margin-bottom: 15px; text-align: left;">
 <div class="input-group">
-<label>Responsável</label>
-<select id="manualType">
-<option value="processo">⏳ Espera / Processo</option>
-<option value="maquina">⚙️ Máquina</option>
-<option value="pessoa" selected>🧍‍♂️ Humano</option>
+<label>Prioridade</label>
+<select id="manualPriority">
+<option value="">— Selecione —</option>
+<option value="baixa">🟢 Baixa</option>
+<option value="media">🟡 Média</option>
+<option value="alta">🔴 Alta</option>
 </select>
 </div>
 <div class="input-group">
-<label>Classificação</label>
-<select id="manualVa">
-<option value="va" selected>VA (Agrega)</option>
-<option value="nva">NVA (Desperdício)</option>
-<option value="bnva">BNVA (Necessário)</option>
+<label>Canal</label>
+<select id="manualChannel">
+<option value="">— Selecione —</option>
+<option value="email">📧 E-mail</option>
+<option value="chat">💬 Chat</option>
+<option value="ticket">🎫 Ticket</option>
 </select>
 </div>
 </div>
-<div class="config-grid" style="margin-bottom: 15px; text-align: left; grid-template-columns: 1fr;">
-<div class="input-group">
-<label>Setup</label>
-<select id="manualSetup">
-<option value="na" selected>N/A (Não é setup)</option>
-<option value="externo">EXT (Setup Externo)</option>
-<option value="interno">INT (Setup Interno)</option>
-</select>
-</div>
-</div>
+
 <div class="modal-btn-row">
 <button onclick="closeManualModal()" style="flex:1; background:#555; padding:10px; color:white;">Cancelar</button>
 <button id="btnSaveManual" onclick="saveManualTime()" style="flex:1; background:var(--green); padding:10px; color:white;">Salvar</button>
@@ -453,8 +501,8 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <div id="exportContainer">
 <div class="print-header">
 <div>
-<h1>Relatório de Balanceamento de Operação</h1>
-<p>Cronoanálise detalhada por elementos (Homem x Máquina x Processo) com Análise VA.</p>
+<h1>Relatório Lean Office — Análise de Fluxo Administrativo</h1>
+<p>Lead Time · Touch Time · VA/NVA/BNVA · Dependências internas e externas.</p>
 </div>
 <div style="text-align: right;">
 <p><strong>Data:</strong> <span id="printDate">--/--/----</span></p>
@@ -465,22 +513,22 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <div class="col-1">
 <div class="card" id="configForm">
 <div class="input-group" style="margin-bottom: 10px;">
-<label>Equipamento / Produto / Operação</label>
-<input type="text" id="equipName" placeholder="Ex: Setup Injetora 04...">
+<label>Demanda / Processo / Área</label>
+<input type="text" id="equipName" placeholder="Ex: Onboarding de Clientes...">
 </div>
 <div class="input-group" style="margin-bottom: 10px;">
-<label>Analista Responsável</label>
+<label>Analista / Responsável</label>
 <input type="text" id="analystName" placeholder="Nome de quem está medindo...">
 </div>
 <div class="input-group" style="margin-bottom: 10px;">
 <label>Tipo de estudo</label>
 <select id="studyType" onchange="handleStudyTypeChange()">
-<option value="operacional" selected>Operacional</option>
-<option value="operacional_setup">Operacional/Setup</option>
+<option value="lean_office" selected>Lean Office</option>
+<option value="lean_dependencias">Lean Office / Dependências</option>
 </select>
 </div>
 </div>
-<div class="print-summary"><div><strong>Operação Analisada:</strong> <span id="printEquipName">—</span></div></div>
+<div class="print-summary"><div><strong>Demanda / Processo:</strong> <span id="printEquipName">—</span></div></div>
 <div class="print-executive-summary" id="printExecutiveSummary">—</div>
 <div class="card">
 <div class="btn-row">
