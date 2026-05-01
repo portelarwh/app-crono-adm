@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = 'v4.2.1';
+const APP_VERSION = 'v4.3.0';
 
 function setupSplash(){
   const splash = document.createElement('div');
