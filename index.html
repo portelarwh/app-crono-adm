@@ -501,8 +501,8 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <div id="exportContainer">
 <div class="print-header">
 <div>
-<h1>Relatório de Balanceamento de Operação</h1>
-<p>Cronoanálise detalhada por elementos (Homem x Máquina x Processo) com Análise VA.</p>
+<h1>Relatório Lean Office — Análise de Fluxo Administrativo</h1>
+<p>Lead Time · Touch Time · VA/NVA/BNVA · Dependências internas e externas.</p>
 </div>
 <div style="text-align: right;">
 <p><strong>Data:</strong> <span id="printDate">--/--/----</span></p>
@@ -513,22 +513,22 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <div class="col-1">
 <div class="card" id="configForm">
 <div class="input-group" style="margin-bottom: 10px;">
-<label>Equipamento / Produto / Operação</label>
-<input type="text" id="equipName" placeholder="Ex: Setup Injetora 04...">
+<label>Demanda / Processo / Área</label>
+<input type="text" id="equipName" placeholder="Ex: Onboarding de Clientes...">
 </div>
 <div class="input-group" style="margin-bottom: 10px;">
-<label>Analista Responsável</label>
+<label>Analista / Responsável</label>
 <input type="text" id="analystName" placeholder="Nome de quem está medindo...">
 </div>
 <div class="input-group" style="margin-bottom: 10px;">
 <label>Tipo de estudo</label>
 <select id="studyType" onchange="handleStudyTypeChange()">
-<option value="operacional" selected>Operacional</option>
-<option value="operacional_setup">Operacional/Setup</option>
+<option value="lean_office" selected>Lean Office</option>
+<option value="lean_dependencias">Lean Office / Dependências</option>
 </select>
 </div>
 </div>
-<div class="print-summary"><div><strong>Operação Analisada:</strong> <span id="printEquipName">—</span></div></div>
+<div class="print-summary"><div><strong>Demanda / Processo:</strong> <span id="printEquipName">—</span></div></div>
 <div class="print-executive-summary" id="printExecutiveSummary">—</div>
 <div class="card">
 <div class="btn-row">
