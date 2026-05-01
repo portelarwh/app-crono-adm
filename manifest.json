@@ -1,7 +1,7 @@
 {
-  "name": "Crono ADM — Lean Office",
+  "name": "Crono ADM — Mapeamento de Fluxo Administrativo",
   "short_name": "Crono ADM",
-  "description": "Análise de fluxo administrativo: Lead Time, Touch Time, VA/NVA/BNVA e dependências. Lean Office PWA.",
+  "description": "Mapeamento de fluxo administrativo para analisar Lead Time, Touch Time, esperas, retrabalhos, handoffs e gargalos em processos Lean Office.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

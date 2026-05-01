@@ -1,13 +1,13 @@
 'use strict';
 
-const APP_VERSION = 'v4.0.0';
+const APP_VERSION = 'v4.1.0';
 
 function setupSplash(){
   const splash = document.createElement('div');
   splash.innerHTML = `<div style="position:fixed;inset:0;background:#0d1117;color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;font-family:sans-serif">
     <img src="assets/Icon-512.png" style="width:120px;margin-bottom:16px">
     <div style="font-size:20px;font-weight:bold">CRONO ADM</div>
-    <div style="font-size:14px;opacity:0.7">LEAN OFFICE</div>
+    <div style="font-size:14px;opacity:0.7">MAPEAMENTO DE FLUXO ADMINISTRATIVO</div>
     <div style="margin-top:10px;font-size:12px;opacity:0.5">${APP_VERSION}</div>
   </div>`;
   document.body.appendChild(splash);
