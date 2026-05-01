@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v4.1.0';
+  var APP_VERSION='v4.2.0';
   window.APP_VERSION=APP_VERSION;
 
   var refreshing=false;
@@ -10,6 +10,15 @@
   function setVersion(){
     var h=document.getElementById('appVersion'); if(h) h.textContent=APP_VERSION;
     var s=document.getElementById('splashVersion'); if(s) s.textContent=APP_VERSION;
+  }
+
+  function loadAdminEvents(){
+    if(document.getElementById('adminEventsScript')) return;
+    var script=document.createElement('script');
+    script.id='adminEventsScript';
+    script.src='admin-events.js?v='+encodeURIComponent(APP_VERSION);
+    script.defer=true;
+    document.head.appendChild(script);
   }
 
   function toast(msg){
@@ -31,6 +40,7 @@
 
   function register(){
     setVersion();
+    loadAdminEvents();
     if(!('serviceWorker'in navigator))return;
 
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
