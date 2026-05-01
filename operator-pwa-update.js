@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v4.3.0';
+  var APP_VERSION='v4.4.0';
   window.APP_VERSION=APP_VERSION;
 
   var refreshing=false;
@@ -25,6 +25,7 @@
     appendScript('adminEventsScript','admin-events.js');
     appendScript('adminEventsClickFixScript','admin-events-click-fix.js');
     appendScript('flowEfficiencyScript','flow-efficiency.js');
+    appendScript('handoffsScript','handoffs.js');
   }
 
   function toast(msg){
