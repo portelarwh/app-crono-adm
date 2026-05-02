@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v4.8.0';
+const CACHE_NAME = 'crono-adm-lean-office-v5.0.0';
 
 const ASSETS = [
   './',
@@ -15,7 +15,8 @@ const ASSETS = [
   './handoffs-calculation-fix.js',
   './admin-pareto.js',
   './executive-summary.js',
-  './executive-pdf.js'
+  './executive-pdf.js',
+  './current-vs-ideal.js'
 ];
 
 self.addEventListener('install', event => {
