@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = 'v5.0.0';
+const APP_VERSION = 'v5.0.1';
 
 function setupSplash(){
   const splash = document.createElement('div');
@@ -17,7 +17,7 @@ function setupSplash(){
 function registerSW(){
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
-      navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.register('sw.js?v='+encodeURIComponent(APP_VERSION), { updateViaCache: 'none' });
     });
   }
 }
