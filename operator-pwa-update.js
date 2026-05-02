@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v5.1.1';
+  var APP_VERSION='v5.1.2';
   window.APP_VERSION=APP_VERSION;
 
   var started=false;
@@ -34,6 +34,7 @@
     appendScript('currentVsIdealScript','current-vs-ideal.js');
     appendScript('timerTopLayoutScript','timer-top-layout.js');
     appendScript('handoffsRenderFixScript','handoffs-render-fix.js');
+    appendScript('resetCleanupScript','reset-cleanup.js');
   }
 
   function toast(msg, duration){
