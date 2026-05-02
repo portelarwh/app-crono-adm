@@ -29,7 +29,14 @@
   }
 
   function defaultRecord(){
-    return { areaAtual: '', responsavel: '', proximaArea: '' };
+    return { areaAtual: '', responsavel: '' };
+  }
+
+  function normalizeRecord(record){
+    return {
+      areaAtual: clean(record && record.areaAtual, ''),
+      responsavel: clean(record && record.responsavel, '')
+    };
   }
 
   function ensureRecords(){
@@ -42,6 +49,9 @@
       row.setAttribute('data-handoff-row-key', key);
       if(!map[key]){
         map[key] = defaultRecord();
+        changed = true;
+      }else if(Object.prototype.hasOwnProperty.call(map[key], 'proximaArea')){
+        map[key] = normalizeRecord(map[key]);
         changed = true;
       }
     });
@@ -64,7 +74,7 @@
       .handoffs-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
       .handoff-inline { display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-left:2px; }
       .handoff-input {
-        width:74px; min-width:58px; background:rgba(255,255,255,.06); color:var(--text-main);
+        width:82px; min-width:64px; background:rgba(255,255,255,.06); color:var(--text-main);
         border:1px solid var(--border); border-radius:5px; font-size:.68rem; font-weight:700; padding:3px 4px;
         text-align:center;
       }
@@ -95,7 +105,7 @@
     card.innerHTML = `
       <div class="chart-title">Handoffs e Responsáveis</div>
       <div class="handoffs-grid" id="handoffsGrid"></div>
-      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa para identificar excesso de passagens no fluxo.</div>
+      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa. A mudança de área entre etapas será considerada handoff automaticamente.</div>
     `;
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
@@ -105,7 +115,6 @@
       <span class="handoff-inline screen-only" data-handoff-index="${index}">
         <input class="handoff-input" data-field="areaAtual" placeholder="Área" value="${escapeAttr(record.areaAtual)}" title="Área atual">
         <input class="handoff-input" data-field="responsavel" placeholder="Resp." value="${escapeAttr(record.responsavel)}" title="Responsável">
-        <input class="handoff-input" data-field="proximaArea" placeholder="Próx." value="${escapeAttr(record.proximaArea)}" title="Próxima área">
       </span>
     `;
   }
@@ -135,7 +144,7 @@
 
     rows.forEach(function(row, index){
       var key = getRowKey(row, index);
-      var record = map[key] || defaultRecord();
+      var record = normalizeRecord(map[key] || defaultRecord());
       var slot = row.querySelector('.handoff-slot');
 
       if(!slot){
@@ -170,7 +179,7 @@
 
         var key = getRowKey(row, index);
         var map = loadMap();
-        var record = map[key] || defaultRecord();
+        var record = normalizeRecord(map[key] || defaultRecord());
         record[this.getAttribute('data-field')] = this.value;
         map[key] = record;
         saveMap(map);
@@ -188,11 +197,11 @@
 
     rows.forEach(function(row, index){
       var key = getRowKey(row, index);
-      var record = map[key] || defaultRecord();
+      var record = normalizeRecord(map[key] || defaultRecord());
       var area = clean(record.areaAtual, '');
       var resp = clean(record.responsavel, '');
 
-      if(area || resp || clean(record.proximaArea, '')) filled++;
+      if(area || resp) filled++;
       areas.push(area || DEFAULT_AREA);
       responsaveis.push(resp || DEFAULT_AREA);
     });
@@ -201,8 +210,8 @@
     var handoffsResp = 0;
 
     for(var i=1; i<areas.length; i++){
-      if(areas[i] !== areas[i-1]) handoffsArea++;
-      if(responsaveis[i] !== responsaveis[i-1]) handoffsResp++;
+      if(areas[i] !== DEFAULT_AREA && areas[i-1] !== DEFAULT_AREA && areas[i] !== areas[i-1]) handoffsArea++;
+      if(responsaveis[i] !== DEFAULT_AREA && responsaveis[i-1] !== DEFAULT_AREA && responsaveis[i] !== responsaveis[i-1]) handoffsResp++;
     }
 
     var uniqueAreas = Array.from(new Set(areas.filter(function(x){ return x && x !== DEFAULT_AREA; })));
@@ -213,7 +222,7 @@
       filled: filled,
       handoffsArea: handoffsArea,
       handoffsResp: handoffsResp,
-      handoffsTotal: Math.max(handoffsArea, handoffsResp),
+      handoffsTotal: handoffsArea,
       uniqueAreas: uniqueAreas.length,
       uniqueResp: uniqueResp.length,
       lastArea: uniqueAreas[uniqueAreas.length - 1] || DEFAULT_AREA
@@ -232,7 +241,7 @@
       <div class="handoffs-box">
         <span class="handoffs-title">Handoffs</span>
         <span class="handoffs-value">${data.handoffsTotal}</span>
-        <span class="handoffs-sub">mudanças no fluxo</span>
+        <span class="handoffs-sub">mudanças de área</span>
       </div>
       <div class="handoffs-box">
         <span class="handoffs-title">Áreas</span>
@@ -266,9 +275,9 @@
     }else if(data.filled === 0){
       note.textContent = 'Informe área e responsável nas etapas para calcular handoffs administrativos.';
     }else if(data.handoffsTotal >= Math.max(3, Math.ceil(data.rows * 0.6))){
-      note.textContent = 'Leitura: alto número de handoffs. Avalie excesso de transferências, aprovações intermediárias e dependência entre áreas.';
+      note.textContent = 'Leitura: alto número de handoffs por mudança de área. Avalie excesso de transferências e dependência entre áreas.';
     }else{
-      note.textContent = 'Leitura: handoffs controlados. Valide se as passagens são necessárias ou se podem ser simplificadas.';
+      note.textContent = 'Leitura: handoffs controlados. O cálculo considera automaticamente mudança de área entre uma etapa e a próxima.';
     }
 
     window.cronoAdmHandoffs = data;
