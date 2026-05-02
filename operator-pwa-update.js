@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v4.4.1';
+  var APP_VERSION='v4.5.0';
   window.APP_VERSION=APP_VERSION;
 
   var refreshing=false;
@@ -27,6 +27,7 @@
     appendScript('flowEfficiencyScript','flow-efficiency.js');
     appendScript('handoffsScript','handoffs.js');
     appendScript('handoffsCalculationFixScript','handoffs-calculation-fix.js');
+    appendScript('adminParetoScript','admin-pareto.js');
   }
 
   function toast(msg){
