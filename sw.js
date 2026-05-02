@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v5.1.2';
+const CACHE_NAME = 'crono-adm-lean-office-v5.1.3';
 
 const ASSETS = [
   './',

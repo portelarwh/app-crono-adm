@@ -20,12 +20,15 @@
     return text || fallback || '';
   }
 
-  function getRowKey(row, index){
-    return row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || String(index);
-  }
-
   function getRows(){
     return Array.prototype.slice.call(document.querySelectorAll('.history-row'));
+  }
+
+  function getRowKey(row, index){
+    var key = row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || row.getAttribute('data-ideal-row-key');
+    if(!key){ key = 'row-' + index; }
+    row.setAttribute('data-handoff-row-key', key);
+    return key;
   }
 
   function defaultRecord(){
@@ -41,23 +44,20 @@
 
   function ensureRecords(){
     var rows = getRows();
-    var map = loadMap();
+    var oldMap = loadMap();
+    var nextMap = {};
     var changed = false;
 
     rows.forEach(function(row, index){
       var key = getRowKey(row, index);
-      row.setAttribute('data-handoff-row-key', key);
-      if(!map[key]){
-        map[key] = defaultRecord();
-        changed = true;
-      }else if(Object.prototype.hasOwnProperty.call(map[key], 'proximaArea')){
-        map[key] = normalizeRecord(map[key]);
-        changed = true;
-      }
+      var record = oldMap[key] ? normalizeRecord(oldMap[key]) : defaultRecord();
+      nextMap[key] = record;
+      if(!oldMap[key] || JSON.stringify(oldMap[key]) !== JSON.stringify(record)) changed = true;
     });
 
-    if(changed) saveMap(map);
-    return map;
+    if(Object.keys(oldMap).length !== Object.keys(nextMap).length) changed = true;
+    if(changed) saveMap(nextMap);
+    return nextMap;
   }
 
   function injectStyles(){
@@ -72,11 +72,12 @@
       .handoffs-value { display:block; font-size:1.08rem; font-weight:900; margin-top:4px; font-variant-numeric:tabular-nums; }
       .handoffs-sub { display:block; font-size:.68rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
       .handoffs-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
-      .handoff-inline { display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-left:2px; }
+      .handoff-slot { display:inline-flex; align-items:center; margin-left:2px; }
+      .handoff-inline { display:inline-flex !important; gap:4px; align-items:center; flex-wrap:wrap; margin-left:2px; }
       .handoff-input {
         width:82px; min-width:64px; background:rgba(255,255,255,.06); color:var(--text-main);
         border:1px solid var(--border); border-radius:5px; font-size:.68rem; font-weight:700; padding:3px 4px;
-        text-align:center;
+        text-align:center; display:inline-flex !important; visibility:visible !important; opacity:1 !important;
       }
       .handoff-badge {
         display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:64px;
@@ -105,7 +106,7 @@
     card.innerHTML = `
       <div class="chart-title">Handoffs e Responsáveis</div>
       <div class="handoffs-grid" id="handoffsGrid"></div>
-      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa. A mudança de área entre etapas será considerada handoff automaticamente.</div>
+      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa. A mudança de área entre etapas preenchidas será considerada handoff automaticamente.</div>
     `;
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
@@ -113,8 +114,8 @@
   function inlineEditorHtml(record, index){
     return `
       <span class="handoff-inline screen-only" data-handoff-index="${index}">
-        <input class="handoff-input" data-field="areaAtual" placeholder="Área" value="${escapeAttr(record.areaAtual)}" title="Área atual">
-        <input class="handoff-input" data-field="responsavel" placeholder="Resp." value="${escapeAttr(record.responsavel)}" title="Responsável">
+        <input class="handoff-input" data-field="areaAtual" placeholder="Área" value="${escapeAttr(record.areaAtual)}" title="Área da etapa">
+        <input class="handoff-input" data-field="responsavel" placeholder="Resp." value="${escapeAttr(record.responsavel)}" title="Responsável da etapa">
       </span>
     `;
   }
@@ -178,7 +179,7 @@
         if(!row) return;
 
         var key = getRowKey(row, index);
-        var map = loadMap();
+        var map = ensureRecords();
         var record = normalizeRecord(map[key] || defaultRecord());
         record[this.getAttribute('data-field')] = this.value;
         map[key] = record;
@@ -191,8 +192,8 @@
   function calculateHandoffs(){
     var rows = getRows();
     var map = ensureRecords();
-    var areas = [];
-    var responsaveis = [];
+    var flowAreas = [];
+    var flowResp = [];
     var filled = 0;
 
     rows.forEach(function(row, index){
@@ -202,20 +203,22 @@
       var resp = clean(record.responsavel, '');
 
       if(area || resp) filled++;
-      areas.push(area || DEFAULT_AREA);
-      responsaveis.push(resp || DEFAULT_AREA);
+      if(area) flowAreas.push(area);
+      if(resp) flowResp.push(resp);
     });
 
     var handoffsArea = 0;
     var handoffsResp = 0;
 
-    for(var i=1; i<areas.length; i++){
-      if(areas[i] !== DEFAULT_AREA && areas[i-1] !== DEFAULT_AREA && areas[i] !== areas[i-1]) handoffsArea++;
-      if(responsaveis[i] !== DEFAULT_AREA && responsaveis[i-1] !== DEFAULT_AREA && responsaveis[i] !== responsaveis[i-1]) handoffsResp++;
+    for(var i=1; i<flowAreas.length; i++){
+      if(flowAreas[i] !== flowAreas[i-1]) handoffsArea++;
+    }
+    for(var r=1; r<flowResp.length; r++){
+      if(flowResp[r] !== flowResp[r-1]) handoffsResp++;
     }
 
-    var uniqueAreas = Array.from(new Set(areas.filter(function(x){ return x && x !== DEFAULT_AREA; })));
-    var uniqueResp = Array.from(new Set(responsaveis.filter(function(x){ return x && x !== DEFAULT_AREA; })));
+    var uniqueAreas = Array.from(new Set(flowAreas));
+    var uniqueResp = Array.from(new Set(flowResp));
 
     return {
       rows: rows.length,
@@ -225,7 +228,8 @@
       handoffsTotal: handoffsArea,
       uniqueAreas: uniqueAreas.length,
       uniqueResp: uniqueResp.length,
-      lastArea: uniqueAreas[uniqueAreas.length - 1] || DEFAULT_AREA
+      firstArea: flowAreas[0] || DEFAULT_AREA,
+      lastArea: flowAreas[flowAreas.length - 1] || DEFAULT_AREA
     };
   }
 
@@ -238,46 +242,20 @@
     var data = calculateHandoffs();
 
     grid.innerHTML = `
-      <div class="handoffs-box">
-        <span class="handoffs-title">Handoffs</span>
-        <span class="handoffs-value">${data.handoffsTotal}</span>
-        <span class="handoffs-sub">mudanças de área</span>
-      </div>
-      <div class="handoffs-box">
-        <span class="handoffs-title">Áreas</span>
-        <span class="handoffs-value">${data.uniqueAreas}</span>
-        <span class="handoffs-sub">envolvidas</span>
-      </div>
-      <div class="handoffs-box">
-        <span class="handoffs-title">Responsáveis</span>
-        <span class="handoffs-value">${data.uniqueResp}</span>
-        <span class="handoffs-sub">distintos</span>
-      </div>
-      <div class="handoffs-box">
-        <span class="handoffs-title">Mudança área</span>
-        <span class="handoffs-value">${data.handoffsArea}</span>
-        <span class="handoffs-sub">entre etapas</span>
-      </div>
-      <div class="handoffs-box">
-        <span class="handoffs-title">Mudança resp.</span>
-        <span class="handoffs-value">${data.handoffsResp}</span>
-        <span class="handoffs-sub">entre etapas</span>
-      </div>
-      <div class="handoffs-box">
-        <span class="handoffs-title">Preenchidas</span>
-        <span class="handoffs-value">${data.filled}/${data.rows}</span>
-        <span class="handoffs-sub">etapas</span>
-      </div>
+      <div class="handoffs-box"><span class="handoffs-title">Handoffs</span><span class="handoffs-value">${data.handoffsTotal}</span><span class="handoffs-sub">mudanças de área</span></div>
+      <div class="handoffs-box"><span class="handoffs-title">Áreas</span><span class="handoffs-value">${data.uniqueAreas}</span><span class="handoffs-sub">nas etapas</span></div>
+      <div class="handoffs-box"><span class="handoffs-title">Responsáveis</span><span class="handoffs-value">${data.uniqueResp}</span><span class="handoffs-sub">distintos</span></div>
+      <div class="handoffs-box"><span class="handoffs-title">Mudança área</span><span class="handoffs-value">${data.handoffsArea}</span><span class="handoffs-sub">entre etapas</span></div>
+      <div class="handoffs-box"><span class="handoffs-title">Mudança resp.</span><span class="handoffs-value">${data.handoffsResp}</span><span class="handoffs-sub">entre etapas</span></div>
+      <div class="handoffs-box"><span class="handoffs-title">Preenchidas</span><span class="handoffs-value">${data.filled}/${data.rows}</span><span class="handoffs-sub">etapas</span></div>
     `;
 
     if(data.rows === 0){
       note.textContent = 'Sem etapas registradas. Registre o fluxo para mapear handoffs e responsáveis.';
     }else if(data.filled === 0){
       note.textContent = 'Informe área e responsável nas etapas para calcular handoffs administrativos.';
-    }else if(data.handoffsTotal >= Math.max(3, Math.ceil(data.rows * 0.6))){
-      note.textContent = 'Leitura: alto número de handoffs por mudança de área. Avalie excesso de transferências e dependência entre áreas.';
     }else{
-      note.textContent = 'Leitura: handoffs controlados. O cálculo considera automaticamente mudança de área entre uma etapa e a próxima.';
+      note.textContent = 'Leitura: o cálculo ignora a área informativa do cabeçalho e considera a sequência de áreas preenchidas nas etapas.';
     }
 
     window.cronoAdmHandoffs = data;
@@ -298,6 +276,8 @@
     applyEditorsToRows();
     observeChanges();
   }
+
+  window.cronoAdmApplyHandoffs = applyEditorsToRows;
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
