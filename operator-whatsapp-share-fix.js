@@ -15,47 +15,90 @@
     return clean((el&&(el.value||el.textContent||el.innerText))||fallback||'Não informado');
   }
 
+  function flow(){
+    return window.cronoAdmFlowEfficiency || {};
+  }
+
+  function handoffs(){
+    return window.cronoAdmHandoffs || {};
+  }
+
+  function pareto(){
+    return window.cronoAdmPareto || {};
+  }
+
+  function executive(){
+    return window.cronoAdmExecutiveSummary || {};
+  }
+
+  function fmt(value, fallback){
+    return clean(value || fallback || '0');
+  }
+
+  function pct(value){
+    var n = Number(value);
+    return isFinite(n) ? n.toFixed(1)+'%' : '0,0%';
+  }
+
+  function formatSeconds(totalSeconds){
+    var total = Math.max(0, Math.round(Number(totalSeconds) || 0));
+    var h = Math.floor(total / 3600);
+    var m = Math.floor((total % 3600) / 60);
+    var s = total % 60;
+    if(h > 0) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function topCriticalLabel(){
+    var p = pareto();
+    if(p.criticalItems && p.criticalItems.length){
+      return p.criticalItems[0].label || 'Evento crítico';
+    }
+    if(p.top && p.top.label){ return p.top.label; }
+    return 'Não identificado';
+  }
+
   function buildSummaryText(){
-    var equip = val('equipName','Operação não informada');
+    var processo = val('equipName','Processo não informado');
     var analyst = val('analystName','Não informado');
     var goal = val('goalTime','Não definido');
+    var f = flow();
+    var h = handoffs();
+    var e = executive();
 
-    var isSetup = val('studyType','operacional')==='operacional_setup';
+    var conclusion = clean(e.conclusion || (window.getExecutiveSummaryText ? window.getExecutiveSummaryText() : 'Conclusão ainda não disponível.'));
+    var action = clean(e.action || 'Definir próximos passos com base no maior evento crítico identificado.');
+    var status = clean(e.status || 'Status não calculado');
+    var risk = clean(e.risk || 'Não calculado');
 
     var lines=[
-      '📊 *Resumo Executivo da Cronoanálise*','',
-      '🏭 Operação: '+equip,
+      '📊 *Resumo Executivo — Crono ADM*','',
+      '📌 Processo: '+processo,
       '👤 Analista: '+analyst,
       '📅 Data: '+new Date().toLocaleDateString('pt-BR'),
-      '📌 Tipo: '+(isSetup?'Operacional/Setup':'Operacional'),'',
-      '⏱️ *Indicadores principais*',
-      '• Tempo total: '+txt('valTempoTotal','0'),
-      '• Meta: '+goal,
-      '• Etapas: '+txt('valSamples','0'),'',
-      '👤 *Distribuição*',
-      '• Operador: '+txt('valTempoPessoa')+' ('+txt('valPercPessoa')+')',
-      '• Máquina: '+txt('valTempoMaquina')+' ('+txt('valPercMaquina')+')',
-      '• Processo: '+txt('valTempoProcesso')+' ('+txt('valPercProcesso')+')','',
-      '🟢 *Valor*',
-      '• VA: '+txt('valTempoVA')+' ('+txt('valPercVA')+')',
-      '• NVA: '+txt('valTempoNVA')+' ('+txt('valPercNVA')+')',
-      '• BNVA: '+txt('valTempoBNVA')+' ('+txt('valPercBNVA')+')'
+      '🎯 Meta/Referência: '+goal,'',
+      '⏱️ *Indicadores Lean Office*',
+      '• Lead Time: '+formatSeconds(f.lead),
+      '• Touch Time: '+formatSeconds(f.touch),
+      '• Waiting Time: '+formatSeconds(f.waiting)+' ('+pct(f.waitingPct)+')',
+      '• Retrabalho: '+formatSeconds(f.loss)+' ('+pct(f.lossPct)+')',
+      '• Eficiência do Fluxo: '+pct(f.efficiency),
+      '• Etapas: '+fmt(f.rows, txt('valSamples','0')),'',
+      '🔁 *Handoffs*',
+      '• Handoffs totais: '+fmt(h.handoffsTotal,'0'),
+      '• Passagens de área: '+fmt(h.handoffsArea,'0'),
+      '• Mudanças de responsável: '+fmt(h.handoffsResp,'0'),
+      '• Áreas envolvidas: '+fmt(h.uniqueAreas,'0'),
+      '• Responsáveis distintos: '+fmt(h.uniqueResp,'0'),'',
+      '🔎 *Principal evento*',
+      '• '+topCriticalLabel(),'',
+      '📌 *Conclusão*',
+      conclusion,'',
+      '➡️ *Ação recomendada*',
+      action,'',
+      '🚦 *Status*: '+status+' | Risco: '+risk,'',
+      'Gerado pelo Operix Crono ADM — Lean Office'
     ];
-
-    if(isSetup){
-      lines=lines.concat(['','🔧 *Setup*',
-        '• Total: '+txt('valTempoSetup'),
-        '• Interno: '+txt('valTempoSetupInterno'),
-        '• Externo: '+txt('valTempoSetupExterno')
-      ]);
-    }
-
-    lines=lines.concat(['','📌 *Conclusão*',
-      (window.getExecutiveSummaryText?clean(window.getExecutiveSummaryText()):'Resumo não disponível'),
-      '','➡️ *Ação recomendada*',
-      'Reduzir NVA, otimizar setup e balancear processo.','',
-      'Gerado pelo Operix Cronoanálise'
-    ]);
 
     return lines.join('\n');
   }
@@ -86,6 +129,8 @@
       };
     }
   }
+
+  window.buildCronoAdmWhatsAppSummary = buildSummaryText;
 
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',bind);
