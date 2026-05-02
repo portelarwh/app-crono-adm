@@ -31,37 +31,6 @@
         padding-bottom: 10px;
       }
 
-      .timer-top-card .fixed-bottom {
-        position: static !important;
-        left: auto !important;
-        right: auto !important;
-        bottom: auto !important;
-        width: 100% !important;
-        padding: 0 !important;
-        margin: 4px 0 0 0 !important;
-        background: transparent !important;
-        display: flex !important;
-        gap: 6px !important;
-        transform: none !important;
-        -webkit-transform: none !important;
-        z-index: auto !important;
-      }
-
-      .timer-top-card .btn-lap-pessoa,
-      .timer-top-card .btn-lap-maquina,
-      .timer-top-card .btn-lap-processo {
-        padding: 11px 5px;
-        border-radius: 9px;
-      }
-
-      .timer-top-card .lap-icon {
-        font-size: 1.22rem;
-      }
-
-      .timer-top-card .lap-text {
-        font-size: 0.66rem;
-      }
-
       .timer-top-hint {
         display: block;
         margin: 0 0 6px 0;
@@ -74,7 +43,7 @@
       }
 
       body.timer-top-active {
-        padding-bottom: 24px !important;
+        padding-bottom: 120px !important;
       }
 
       body.export-mode .timer-top-hint {
@@ -95,11 +64,6 @@
           padding-top: 9px;
           padding-bottom: 9px;
           font-size: .8rem;
-        }
-        .timer-top-card .btn-lap-pessoa,
-        .timer-top-card .btn-lap-maquina,
-        .timer-top-card .btn-lap-processo {
-          padding: 10px 4px;
         }
       }
     `;
@@ -122,15 +86,25 @@
     if(!timerCard || timerCard.querySelector('.timer-top-hint')) return;
     var hint = document.createElement('span');
     hint.className = 'timer-top-hint';
-    hint.textContent = 'Cronômetro e captura de etapas';
+    hint.textContent = 'Cronômetro';
     timerCard.insertBefore(hint, timerCard.firstChild);
   }
 
-  function moveCaptureButtons(timerCard){
-    if(!timerCard) return;
+  function keepCaptureButtonsFloating(){
     var captureBar = document.querySelector('.fixed-bottom');
-    if(!captureBar || timerCard.contains(captureBar)) return;
-    timerCard.appendChild(captureBar);
+    if(!captureBar) return;
+    if(captureBar.parentElement !== document.body){
+      document.body.appendChild(captureBar);
+    }
+    captureBar.style.position = '';
+    captureBar.style.left = '';
+    captureBar.style.right = '';
+    captureBar.style.bottom = '';
+    captureBar.style.width = '';
+    captureBar.style.padding = '';
+    captureBar.style.margin = '';
+    captureBar.style.background = '';
+    captureBar.style.zIndex = '';
   }
 
   function moveTimerToTop(){
@@ -142,12 +116,13 @@
     document.body.classList.add('timer-top-active');
 
     ensureHint(timerCard);
-    moveCaptureButtons(timerCard);
+    keepCaptureButtonsFloating();
 
     if(configCard.nextSibling !== timerCard){
       configCard.parentNode.insertBefore(timerCard, configCard.nextSibling);
     }
 
+    document.dispatchEvent(new CustomEvent('cronoAdm:timerTopApplied'));
     return true;
   }
 
