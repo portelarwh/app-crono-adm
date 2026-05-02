@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v5.0.1';
+const CACHE_NAME = 'crono-adm-lean-office-v5.0.2';
 
 const ASSETS = [
   './',
@@ -20,7 +20,6 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
@@ -80,11 +79,7 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 
-  if(event.data && event.data.type === 'CLEAR_CACHE_AND_RELOAD') {
-    event.waitUntil(
-      caches.keys()
-        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-        .then(() => self.clients.claim())
-    );
+  if(event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
   }
 });
