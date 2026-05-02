@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v5.0.5';
+const CACHE_NAME = 'crono-adm-lean-office-v5.1.0';
 
 const ASSETS = [
   './',
@@ -16,7 +16,8 @@ const ASSETS = [
   './admin-pareto.js',
   './executive-summary.js',
   './executive-pdf.js',
-  './current-vs-ideal.js'
+  './current-vs-ideal.js',
+  './timer-top-layout.js'
 ];
 
 self.addEventListener('install', event => {
