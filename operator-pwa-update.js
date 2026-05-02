@@ -1,11 +1,11 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v5.0.1';
+  var APP_VERSION='v5.0.2';
   window.APP_VERSION=APP_VERSION;
 
-  var refreshing=false;
   var started=false;
+  var updateToastShown=false;
 
   function setVersion(){
     var h=document.getElementById('appVersion'); if(h) h.textContent=APP_VERSION;
@@ -16,7 +16,7 @@
     if(document.getElementById(id)) return;
     var script=document.createElement('script');
     script.id=id;
-    script.src=src+'?v='+encodeURIComponent(APP_VERSION)+'&t='+Date.now();
+    script.src=src+'?v='+encodeURIComponent(APP_VERSION);
     script.defer=true;
     document.head.appendChild(script);
   }
@@ -56,40 +56,34 @@
   }
 
   async function forceUpdateApp(){
-    toast('Limpando cache e buscando versão nova...',2200);
+    if(sessionStorage.getItem('operix_force_update_running') === '1') return;
+    sessionStorage.setItem('operix_force_update_running','1');
+    toast('Atualizando app uma única vez...',2200);
 
     try{
-      if('serviceWorker' in navigator){
-        var regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(function(reg){
-          if(reg.active) reg.active.postMessage({type:'CLEAR_CACHE_AND_RELOAD'});
-          if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-          return reg.update().catch(function(){});
-        }));
-      }
-
       if(window.caches){
         var keys=await caches.keys();
         await Promise.all(keys.map(function(key){return caches.delete(key);}));
       }
 
       if('serviceWorker' in navigator){
-        var updatedRegs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(updatedRegs.map(function(reg){return reg.unregister();}));
+        var regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function(reg){return reg.unregister();}));
       }
     }catch(error){}
 
     var url=new URL(window.location.href);
     url.searchParams.set('v',APP_VERSION);
-    url.searchParams.set('t',Date.now());
+    url.searchParams.set('refresh','1');
     window.location.replace(url.toString());
   }
 
   function watch(worker){
+    if(!worker) return;
     worker.addEventListener('statechange',()=>{
-      if(worker.state==='installed' && navigator.serviceWorker.controller){
-        toast('Nova versão encontrada. Atualizando...',1800);
-        setTimeout(()=>worker.postMessage({type:'SKIP_WAITING'}),250);
+      if(worker.state==='installed' && navigator.serviceWorker.controller && !updateToastShown){
+        updateToastShown=true;
+        toast('Nova versão disponível. Toque em Atualizar app.',2600);
       }
     });
   }
@@ -101,29 +95,22 @@
 
     if(!('serviceWorker'in navigator))return;
 
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(refreshing)return;
-      refreshing=true;
-      var url=new URL(window.location.href);
-      url.searchParams.set('v',APP_VERSION);
-      url.searchParams.set('t',Date.now());
-      window.location.replace(url.toString());
-    });
-
     window.addEventListener('load',()=>{
       if(started)return;
       started=true;
 
-      toast('Buscando atualização...',1200);
-
       navigator.serviceWorker.register('sw.js?v='+encodeURIComponent(APP_VERSION),{updateViaCache:'none'})
       .then(reg=>{
         if(reg.installing)watch(reg.installing);
-        if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
         reg.addEventListener('updatefound',()=>watch(reg.installing));
         return reg.update();
       })
-      .catch(()=>{});
+      .then(()=>{
+        sessionStorage.removeItem('operix_force_update_running');
+      })
+      .catch(()=>{
+        sessionStorage.removeItem('operix_force_update_running');
+      });
     });
   }
 
