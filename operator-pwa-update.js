@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v5.0.3';
+  var APP_VERSION='v5.0.4';
   window.APP_VERSION=APP_VERSION;
 
   var started=false;
@@ -47,40 +47,40 @@
     var style=document.createElement('style');
     style.id='topActionsPillStyle';
     style.textContent=`
-      .top-actions-pill{
-        display:inline-flex;align-items:center;justify-content:center;gap:0;
-        border:1px solid rgba(255,255,255,.16);background:rgba(13,17,23,.92);
-        color:#fff;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.28);
-        overflow:hidden;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-        min-height:42px;max-width:100%;white-space:nowrap;z-index:30;
+      .top-actions-host{
+        width:100%;display:block;margin:0 0 12px 0;box-sizing:border-box;
       }
-      .top-actions-pill.is-floating{position:absolute;top:14px;right:14px;}
+      .top-actions-pill{
+        width:100%;height:40px;min-height:40px;display:grid;grid-template-columns:92px 1fr 58px;
+        align-items:center;border:1px solid rgba(255,255,255,.14);background:rgba(13,17,23,.92);
+        color:#fff;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.24);
+        overflow:hidden;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;z-index:30;
+      }
       .top-actions-pill span,.top-actions-pill button{
-        height:42px;display:inline-flex;align-items:center;justify-content:center;
-        padding:0 12px;border:0;border-left:1px solid rgba(255,255,255,.12);
-        background:transparent;color:inherit;font-size:12px;font-weight:900;letter-spacing:.02em;
+        height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;
+        border:0;border-left:1px solid rgba(255,255,255,.10);background:transparent;color:inherit;
+        font-size:12px;font-weight:900;letter-spacing:.02em;box-sizing:border-box;
       }
       .top-actions-pill span:first-child,.top-actions-pill button:first-child{border-left:0;}
       .top-actions-pill button{cursor:pointer;touch-action:manipulation;}
-      .top-actions-pill button:active{background:rgba(255,255,255,.12);}
-      .top-actions-version{min-width:72px;color:#dbeafe;}
-      .top-actions-update{min-width:92px;}
-      .top-actions-theme{min-width:46px;font-size:18px!important;padding:0 13px!important;}
-      .top-actions-host{display:flex;justify-content:flex-end;align-items:center;margin:-2px 0 10px 0;}
-      html[data-theme="light"] .top-actions-pill{background:rgba(255,255,255,.94);color:#1a1f2e;border-color:rgba(26,31,46,.12);box-shadow:0 8px 24px rgba(15,23,42,.14);}
+      .top-actions-pill button:active{background:rgba(255,255,255,.10);}
+      .top-actions-version{color:#dbeafe;min-width:92px;}
+      .top-actions-update{width:100%;min-width:0;}
+      .top-actions-theme{min-width:58px;font-size:18px!important;padding:0!important;}
+      #appVersion{display:none!important;}
+      #op-theme-btn{display:none!important;}
+      #forceUpdateAppBtn{position:static!important;right:auto!important;bottom:auto!important;box-shadow:none!important;opacity:1!important;border-radius:0!important;min-width:0!important;}
+      html[data-theme="light"] .top-actions-pill{background:rgba(255,255,255,.95);color:#1a1f2e;border-color:rgba(26,31,46,.10);box-shadow:0 6px 18px rgba(15,23,42,.10);}
       html[data-theme="light"] .top-actions-version{color:#1d4ed8;}
       html[data-theme="light"] .top-actions-pill span,html[data-theme="light"] .top-actions-pill button{border-left-color:rgba(26,31,46,.10);}
-      #forceUpdateAppBtn{position:static!important;right:auto!important;bottom:auto!important;box-shadow:none!important;opacity:1!important;border-radius:0!important;}
       @media(max-width:520px){
-        .top-actions-host{margin:-4px 0 12px 0;}
-        .top-actions-pill{min-height:38px;}
-        .top-actions-pill span,.top-actions-pill button{height:38px;padding:0 9px;font-size:11px;}
-        .top-actions-version{min-width:64px;}
-        .top-actions-update{min-width:76px;}
-        .top-actions-update .wide{display:none;}
-        .top-actions-theme{min-width:42px;font-size:17px!important;padding:0 10px!important;}
+        .top-actions-host{margin:0 0 10px 0;}
+        .top-actions-pill{height:38px;min-height:38px;grid-template-columns:82px 1fr 52px;}
+        .top-actions-pill span,.top-actions-pill button{height:38px;font-size:11px;padding:0 8px;}
+        .top-actions-version{min-width:82px;}
+        .top-actions-theme{min-width:52px;font-size:17px!important;}
       }
-      body.export-mode .top-actions-pill, body.export-mode .top-actions-host{display:none!important;}
+      body.export-mode .top-actions-host,body.export-mode .top-actions-pill{display:none!important;}
     `;
     document.head.appendChild(style);
   }
@@ -112,19 +112,18 @@
     pill.id='topActionsPill';
     pill.className='top-actions-pill';
     pill.innerHTML='<span id="topActionsVersion" class="top-actions-version">'+APP_VERSION+'</span>'+
-      '<button id="forceUpdateAppBtn" class="top-actions-update" type="button">↻ <span class="wide">Atualizar</span></button>'+
+      '<button id="forceUpdateAppBtn" class="top-actions-update" type="button">↻ Atualizar</button>'+
       '<button id="topActionsThemeBtn" class="top-actions-theme" type="button" aria-label="Alternar tema">🌙</button>';
 
     var firstCard=document.querySelector('.card');
-    if(firstCard && firstCard.parentNode){
+    if(firstCard){
       var host=document.createElement('div');
       host.id='topActionsHost';
       host.className='top-actions-host';
       host.appendChild(pill);
       firstCard.insertBefore(host, firstCard.firstChild);
     }else{
-      pill.classList.add('is-floating');
-      document.body.appendChild(pill);
+      document.body.insertBefore(pill, document.body.firstChild);
     }
 
     var updateBtn=document.getElementById('forceUpdateAppBtn');
@@ -146,6 +145,8 @@
 
     var oldTheme=document.getElementById('op-theme-btn');
     if(oldTheme){ oldTheme.style.display='none'; }
+    var oldVersion=document.getElementById('appVersion');
+    if(oldVersion){ oldVersion.style.display='none'; }
   }
 
   async function forceUpdateApp(){
