@@ -3,6 +3,8 @@
 (function(){
   var STORAGE_KEY = 'cronoAdm_currentVsIdeal_v1';
   var DEFAULT_ACTION = 'manter';
+  var longPressTimer = null;
+  var longPressTriggered = false;
 
   var ACTIONS = {
     manter: { label: 'Manter', factor: 1.00, color: '#28a745', impact: 'sem redução' },
@@ -62,13 +64,6 @@
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
-  function optionHtml(selected){
-    return ACTION_ORDER.map(function(key){
-      var action = ACTIONS[key];
-      return '<option value="'+key+'" '+(selected===key?'selected':'')+'>'+action.label+'</option>';
-    }).join('');
-  }
-
   function injectStyles(){
     if($('currentVsIdealStyle')) return;
     var style = document.createElement('style');
@@ -81,15 +76,34 @@
       .current-vs-ideal-value { display:block; font-size:1.02rem; font-weight:900; margin-top:4px; font-variant-numeric:tabular-nums; }
       .current-vs-ideal-sub { display:block; font-size:.66rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
       .current-vs-ideal-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
-      .ideal-action-select { background:rgba(255,255,255,.06); color:var(--text-main); border:1px solid var(--border); border-radius:5px; font-size:.68rem; font-weight:800; padding:3px 5px; width:auto; min-width:94px; text-align:center; }
-      .ideal-action-badge { display:inline-flex; align-items:center; justify-content:center; min-width:62px; padding:3px 5px; border-radius:4px; font-size:.62rem; font-weight:900; color:#fff; border:1px solid rgba(255,255,255,.22); text-transform:uppercase; white-space:nowrap; }
+      .ideal-action-select { display:none !important; }
+      .ideal-action-slot { display:inline-flex; align-items:center; justify-content:center; }
+      .ideal-action-badge {
+        display:inline-flex; align-items:center; justify-content:center; min-width:82px; padding:7px 10px;
+        border-radius:7px; font-size:.68rem; font-weight:900; color:#fff; border:1px solid rgba(255,255,255,.22);
+        text-transform:uppercase; white-space:nowrap; cursor:pointer; user-select:none; touch-action:manipulation;
+        box-shadow:0 2px 8px rgba(0,0,0,.16);
+      }
+      .ideal-action-badge:active { transform:scale(.98); filter:brightness(1.08); }
+      .ideal-action-menu {
+        position:fixed; left:12px; right:12px; bottom:88px; z-index:99997;
+        display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;
+        padding:10px; border-radius:14px; background:rgba(13,17,23,.96); border:1px solid rgba(255,255,255,.16);
+        box-shadow:0 12px 30px rgba(0,0,0,.38); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      }
+      .ideal-action-menu-title { grid-column:1/-1; color:#cbd5e1; font-size:.72rem; font-weight:900; text-align:center; text-transform:uppercase; letter-spacing:.04em; }
+      .ideal-action-menu-btn {
+        min-height:38px; border:1px solid rgba(255,255,255,.22); border-radius:9px; color:#fff; font-weight:900;
+        text-transform:uppercase; font-size:.72rem; cursor:pointer;
+      }
       html[data-theme="light"] .current-vs-ideal-box { background:#f0f4fa; }
-      html[data-theme="light"] .ideal-action-select { background:#fff; color:#1a1f2e; }
+      html[data-theme="light"] .ideal-action-menu { background:rgba(255,255,255,.98); border-color:rgba(26,31,46,.12); }
+      html[data-theme="light"] .ideal-action-menu-title { color:#334155; }
       body.export-mode .current-vs-ideal-card { display:block !important; break-inside:avoid !important; page-break-inside:avoid !important; }
       body.export-mode .current-vs-ideal-grid { display:grid !important; grid-template-columns:repeat(4,1fr) !important; gap:6px !important; }
       body.export-mode .current-vs-ideal-box { background:#fff !important; color:#1a1f2e !important; border:1px solid #c8d0e0 !important; }
-      body.export-mode .ideal-action-select { display:none !important; }
-      body.export-mode .ideal-action-badge { font-size:6.6pt !important; min-width:50px !important; padding:2px 3px !important; }
+      body.export-mode .ideal-action-badge { font-size:6.6pt !important; min-width:50px !important; padding:2px 3px !important; box-shadow:none !important; }
+      body.export-mode .ideal-action-menu { display:none !important; }
     `;
     document.head.appendChild(style);
   }
@@ -104,7 +118,7 @@
     card.innerHTML = `
       <div class="chart-title">Processo Atual vs Processo Ideal</div>
       <div class="current-vs-ideal-grid" id="currentVsIdealGrid"></div>
-      <div class="current-vs-ideal-note" id="currentVsIdealNote">Classifique cada etapa como manter, eliminar, combinar, automatizar, transferir ou padronizar para estimar o ganho.</div>
+      <div class="current-vs-ideal-note" id="currentVsIdealNote">Toque no badge da ação para alternar. Toque e segure para abrir as opções.</div>
     `;
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
@@ -125,13 +139,29 @@
     return map;
   }
 
-  function badgeHtml(actionKey){
+  function getNextActionKey(actionKey){
+    var currentIndex = ACTION_ORDER.indexOf(actionKey);
+    if(currentIndex < 0) currentIndex = 0;
+    return ACTION_ORDER[(currentIndex + 1) % ACTION_ORDER.length];
+  }
+
+  function saveAction(index, actionKey){
+    var row = getRows()[index];
+    if(!row) return;
+    var key = getRowKey(row, index);
+    var map = loadMap();
+    map[key] = actionKey || DEFAULT_ACTION;
+    saveMap(map);
+    applyEditors();
+  }
+
+  function badgeHtml(actionKey, index){
     var action = ACTIONS[actionKey] || ACTIONS[DEFAULT_ACTION];
-    return '<span class="ideal-action-badge print-only" style="background:'+action.color+'" title="Ação proposta">'+action.label+'</span>';
+    return '<button type="button" class="ideal-action-badge" data-ideal-index="'+index+'" data-action="'+actionKey+'" style="background:'+action.color+'" title="Toque para alternar. Segure para escolher.">'+action.label+'</button>';
   }
 
   function editorHtml(actionKey, index){
-    return '<span class="screen-only ideal-action-slot" data-ideal-index="'+index+'"><select class="ideal-action-select">'+optionHtml(actionKey)+'</select></span>' + badgeHtml(actionKey);
+    return '<span class="screen-only ideal-action-slot" data-ideal-index="'+index+'">' + badgeHtml(actionKey, index) + '</span>';
   }
 
   function applyEditors(){
@@ -157,20 +187,69 @@
     renderSummary();
   }
 
+  function closeMenu(){
+    var menu = $('idealActionMenu');
+    if(menu) menu.remove();
+  }
+
+  function openMenu(index){
+    closeMenu();
+    var menu = document.createElement('div');
+    menu.id = 'idealActionMenu';
+    menu.className = 'ideal-action-menu';
+    menu.innerHTML = '<div class="ideal-action-menu-title">Selecionar ação proposta</div>' + ACTION_ORDER.map(function(key){
+      var action = ACTIONS[key];
+      return '<button type="button" class="ideal-action-menu-btn" data-action="'+key+'" style="background:'+action.color+'">'+action.label+'</button>';
+    }).join('');
+    document.body.appendChild(menu);
+    Array.prototype.slice.call(menu.querySelectorAll('.ideal-action-menu-btn')).forEach(function(btn){
+      btn.addEventListener('click', function(){
+        saveAction(index, this.getAttribute('data-action') || DEFAULT_ACTION);
+        closeMenu();
+      });
+    });
+    setTimeout(function(){
+      document.addEventListener('click', outsideMenuClose, { once:true });
+    }, 0);
+  }
+
+  function outsideMenuClose(event){
+    var menu = $('idealActionMenu');
+    if(menu && !menu.contains(event.target)) closeMenu();
+  }
+
   function bindEditors(){
-    Array.prototype.slice.call(document.querySelectorAll('.ideal-action-select')).forEach(function(select){
-      if(select.dataset.bound === '1') return;
-      select.dataset.bound = '1';
-      select.addEventListener('change', function(){
-        var wrapper = this.closest('.ideal-action-slot');
-        var index = wrapper ? Number(wrapper.getAttribute('data-ideal-index')) : -1;
-        var row = getRows()[index];
-        if(!row) return;
-        var key = getRowKey(row, index);
-        var map = loadMap();
-        map[key] = this.value || DEFAULT_ACTION;
-        saveMap(map);
-        applyEditors();
+    Array.prototype.slice.call(document.querySelectorAll('.ideal-action-badge')).forEach(function(badge){
+      if(badge.dataset.bound === '1') return;
+      badge.dataset.bound = '1';
+
+      badge.addEventListener('pointerdown', function(){
+        var index = Number(this.getAttribute('data-ideal-index'));
+        longPressTriggered = false;
+        clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(function(){
+          longPressTriggered = true;
+          openMenu(index);
+        }, 520);
+      });
+
+      badge.addEventListener('pointerup', function(){
+        clearTimeout(longPressTimer);
+      });
+
+      badge.addEventListener('pointerleave', function(){
+        clearTimeout(longPressTimer);
+      });
+
+      badge.addEventListener('click', function(event){
+        var index = Number(this.getAttribute('data-ideal-index'));
+        var current = this.getAttribute('data-action') || DEFAULT_ACTION;
+        if(longPressTriggered){
+          event.preventDefault();
+          longPressTriggered = false;
+          return;
+        }
+        saveAction(index, getNextActionKey(current));
       });
     });
   }
@@ -216,9 +295,9 @@
     if(data.rows === 0){
       note.textContent = 'Sem etapas registradas. Registre o processo atual para simular o cenário ideal.';
     }else if(data.actionsCount === 0){
-      note.textContent = 'Nenhuma melhoria proposta ainda. Classifique as etapas para estimar redução de Lead Time.';
+      note.textContent = 'Nenhuma melhoria proposta ainda. Toque no badge de ação para classificar as etapas.';
     }else{
-      note.textContent = 'Leitura: o cenário ideal estima redução de ' + data.gainPct.toFixed(1) + '% no Lead Time. Priorize as ações com maior tempo acumulado e menor complexidade de implementação.';
+      note.textContent = 'Leitura: o cenário ideal estima redução de ' + data.gainPct.toFixed(1) + '% no Lead Time. Priorize ações com maior tempo acumulado e menor complexidade.';
     }
 
     window.cronoAdmCurrentVsIdeal = data;
