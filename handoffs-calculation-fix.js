@@ -23,15 +23,24 @@
     return row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || String(index);
   }
 
+  function getElementByRow(row){
+    var id = Number(row.getAttribute('data-id'));
+    if(!Array.isArray(window.elements)) return null;
+    for(var i = 0; i < window.elements.length; i++){
+      if(Number(window.elements[i].id) === id) return window.elements[i];
+    }
+    return null;
+  }
+
   function getRecords(){
     var map = loadMap();
     return getRows().map(function(row, index){
       var key = getRowKey(row, index);
-      var record = map[key] || {};
+      var legacy = map[key] || {};
+      var element = getElementByRow(row) || {};
       return {
-        areaAtual: clean(record.areaAtual),
-        responsavel: clean(record.responsavel),
-        proximaArea: clean(record.proximaArea)
+        areaAtual: clean(element.area || legacy.areaAtual),
+        responsavel: clean(element.requester || legacy.responsavel)
       };
     });
   }
@@ -42,36 +51,14 @@
     var filled = 0;
     var handoffsArea = 0;
     var handoffsResp = 0;
-    var explicitNextArea = 0;
-    var inferredAreaChange = 0;
-
     records.forEach(function(record){
-      if(record.areaAtual || record.responsavel || record.proximaArea) filled++;
+      if(record.areaAtual || record.responsavel) filled++;
     });
 
-    records.forEach(function(record, index){
-      var currentArea = record.areaAtual;
-      var nextArea = record.proximaArea;
-
-      if(nextArea){
-        if(!currentArea || nextArea !== currentArea){
-          handoffsArea++;
-          explicitNextArea++;
-        }
-        return;
-      }
-
-      if(index > 0){
-        var previous = records[index - 1];
-        var previousArea = previous.proximaArea || previous.areaAtual;
-        var previousHadExplicitNext = !!previous.proximaArea;
-
-        if(!previousHadExplicitNext && previousArea && currentArea && previousArea !== currentArea){
-          handoffsArea++;
-          inferredAreaChange++;
-        }
-      }
-    });
+    var areaFlow = records.map(function(record){ return record.areaAtual; }).filter(Boolean);
+    for(var a = 1; a < areaFlow.length; a++){
+      if(areaFlow[a] !== areaFlow[a - 1]) handoffsArea++;
+    }
 
     for(var i = 1; i < records.length; i++){
       var previousResp = records[i - 1].responsavel;
@@ -80,7 +67,7 @@
     }
 
     var uniqueAreas = Array.from(new Set(records
-      .flatMap(function(r){ return [r.areaAtual, r.proximaArea]; })
+      .map(function(r){ return r.areaAtual; })
       .filter(Boolean)
     ));
 
@@ -89,7 +76,7 @@
       .filter(Boolean)
     ));
 
-    var handoffsTotal = handoffsArea + handoffsResp;
+    var handoffsTotal = handoffsArea;
 
     return {
       rows: rows.length,
@@ -97,8 +84,6 @@
       handoffsArea: handoffsArea,
       handoffsResp: handoffsResp,
       handoffsTotal: handoffsTotal,
-      explicitNextArea: explicitNextArea,
-      inferredAreaChange: inferredAreaChange,
       uniqueAreas: uniqueAreas.length,
       uniqueResp: uniqueResp.length,
       lastArea: uniqueAreas[uniqueAreas.length - 1] || DEFAULT_AREA
@@ -116,7 +101,7 @@
       <div class="handoffs-box">
         <span class="handoffs-title">Handoffs</span>
         <span class="handoffs-value">${data.handoffsTotal}</span>
-        <span class="handoffs-sub">área + responsável</span>
+        <span class="handoffs-sub">mudanças de área</span>
       </div>
       <div class="handoffs-box">
         <span class="handoffs-title">Áreas</span>
@@ -131,7 +116,7 @@
       <div class="handoffs-box">
         <span class="handoffs-title">Passagem área</span>
         <span class="handoffs-value">${data.handoffsArea}</span>
-        <span class="handoffs-sub">inclui próx. área</span>
+        <span class="handoffs-sub">entre etapas</span>
       </div>
       <div class="handoffs-box">
         <span class="handoffs-title">Mudança resp.</span>
@@ -148,9 +133,9 @@
     if(data.rows === 0){
       note.textContent = 'Sem etapas registradas. Registre o fluxo para mapear handoffs e responsáveis.';
     }else if(data.filled === 0){
-      note.textContent = 'Informe área, responsável ou próxima área nas etapas para calcular handoffs administrativos.';
+      note.textContent = 'Preencha área e responsável no modal de cada etapa para calcular handoffs administrativos.';
     }else if(data.handoffsArea === 0 && data.handoffsResp === 0){
-      note.textContent = 'Leitura: nenhuma passagem identificada. Preencha Próxima área ou altere Área/Responsável entre etapas para mapear os handoffs.';
+      note.textContent = 'Leitura: nenhuma passagem de área identificada nas etapas preenchidas.';
     }else if(data.handoffsTotal >= Math.max(3, Math.ceil(data.rows * 0.6))){
       note.textContent = 'Leitura: alto número de handoffs. Avalie excesso de transferências, aprovações intermediárias e dependência entre áreas.';
     }else{
