@@ -1,12 +1,10 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v5.1.4';
+  var APP_VERSION='v5.1.5';
   window.APP_VERSION=APP_VERSION;
 
   var started=false;
-  var updateToastShown=false;
-  var updateAvailable=false;
 
   function setVersion(){
     var h=document.getElementById('appVersion'); if(h) h.textContent=APP_VERSION;
@@ -58,16 +56,14 @@
       .top-actions-pill button{cursor:pointer;touch-action:manipulation;}
       .top-actions-pill button:active{background:rgba(255,255,255,.10);}
       .top-actions-version{color:#dbeafe;min-width:82px;}
-      .top-actions-update{width:100%;min-width:0;}
-      .top-actions-update.is-current{color:#9fb3c8;cursor:default;}
-      .top-actions-update.is-update-available{color:#dbeafe;}
+      .top-actions-update{width:100%;min-width:0;color:#9fb3c8;}
       .top-actions-theme{min-width:48px;font-size:16px!important;padding:0!important;}
       .top-actions-update .mobile-label{display:none;}
       #appVersion,#op-theme-btn,.app-version-pill,.theme-floating-pill,.legacy-top-pill,.legacy-version-badge{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
       #forceUpdateAppBtn{position:static!important;right:auto!important;bottom:auto!important;box-shadow:none!important;opacity:1!important;border-radius:0!important;min-width:0!important;}
       html[data-theme="light"] .top-actions-pill{background:rgba(255,255,255,.95);color:#1a1f2e;border-color:rgba(26,31,46,.10);box-shadow:0 4px 12px rgba(15,23,42,.08);}
       html[data-theme="light"] .top-actions-version{color:#1d4ed8;}
-      html[data-theme="light"] .top-actions-update.is-current{color:#64748b;}
+      html[data-theme="light"] .top-actions-update{color:#64748b;}
       html[data-theme="light"] .top-actions-pill span,html[data-theme="light"] .top-actions-pill button{border-left-color:rgba(26,31,46,.10);}
       @media(max-width:520px){.top-actions-host{margin:0 0 8px 0;}.top-actions-pill{height:32px;min-height:32px;grid-template-columns:78px minmax(0,1fr) 46px;}.top-actions-pill span,.top-actions-pill button{height:32px;font-size:10px;padding:0 4px;letter-spacing:0;}.top-actions-version{min-width:78px;}.top-actions-theme{min-width:46px;font-size:15px!important;}.top-actions-update .desktop-label{display:none;}.top-actions-update .mobile-label{display:inline;}}
       body.export-mode .top-actions-host,body.export-mode .top-actions-pill{display:none!important;}
@@ -88,35 +84,6 @@
         }
       });
     });
-  }
-
-  function setUpdateButtonText(btn, desktopText, mobileText){
-    btn.innerHTML='<span class="desktop-label">'+desktopText+'</span><span class="mobile-label">'+mobileText+'</span>';
-  }
-
-  function syncUpdateButton(){
-    var btn=document.getElementById('forceUpdateAppBtn');
-    if(!btn) return;
-    if(updateAvailable){
-      setUpdateButtonText(btn, '↻ Atualizar', '↻ Atualizar');
-      btn.title='Nova versão disponível';
-      btn.classList.remove('is-current');
-      btn.classList.add('is-update-available');
-    }else{
-      setUpdateButtonText(btn, '✓ Versão atualizada', '✓ Atualizada');
-      btn.title='Você está na versão mais recente carregada neste dispositivo';
-      btn.classList.add('is-current');
-      btn.classList.remove('is-update-available');
-    }
-  }
-
-  function markUpdateAvailable(){
-    updateAvailable=true;
-    syncUpdateButton();
-    if(!updateToastShown){
-      updateToastShown=true;
-      toast('Nova versão disponível. Toque em Atualizar.',2600);
-    }
   }
 
   function syncThemeButton(btn){
@@ -148,7 +115,7 @@
     pill.id='topActionsPill';
     pill.className='top-actions-pill';
     pill.innerHTML='<span id="topActionsVersion" class="top-actions-version">'+APP_VERSION+'</span>'+
-      '<button id="forceUpdateAppBtn" class="top-actions-update is-current" type="button"><span class="desktop-label">✓ Versão atualizada</span><span class="mobile-label">✓ Atualizada</span></button>'+
+      '<button id="forceUpdateAppBtn" class="top-actions-update" type="button" title="Toque para verificar/forçar atualização"><span class="desktop-label">✓ Versão atualizada</span><span class="mobile-label">✓ Atualizada</span></button>'+
       '<button id="topActionsThemeBtn" class="top-actions-theme" type="button" aria-label="Alternar tema">🌙</button>';
 
     var firstCard=document.querySelector('.card');
@@ -166,11 +133,7 @@
     if(updateBtn){
       updateBtn.addEventListener('click',function(e){
         e.preventDefault();
-        if(updateAvailable){
-          forceUpdateApp();
-        }else{
-          toast('Versão atualizada.',1200);
-        }
+        forceUpdateApp();
       });
     }
 
@@ -183,14 +146,13 @@
       });
     }
 
-    syncUpdateButton();
     removeLegacyTopPills();
   }
 
   async function forceUpdateApp(){
     if(sessionStorage.getItem('operix_force_update_running') === '1') return;
     sessionStorage.setItem('operix_force_update_running','1');
-    toast('Atualizando app uma única vez...',2200);
+    toast('Verificando e atualizando app...',2200);
 
     try{
       if(window.caches){
@@ -209,15 +171,6 @@
     window.location.replace(url.toString());
   }
 
-  function watch(worker){
-    if(!worker) return;
-    worker.addEventListener('statechange',()=>{
-      if(worker.state==='installed' && navigator.serviceWorker.controller){
-        markUpdateAvailable();
-      }
-    });
-  }
-
   function register(){
     setVersion();
     loadAdminEvents();
@@ -230,12 +183,7 @@
       if(started)return;
       started=true;
       navigator.serviceWorker.register('sw.js?v='+encodeURIComponent(APP_VERSION),{updateViaCache:'none'})
-      .then(reg=>{
-        if(reg.installing)watch(reg.installing);
-        if(reg.waiting && navigator.serviceWorker.controller) markUpdateAvailable();
-        reg.addEventListener('updatefound',()=>watch(reg.installing));
-        return reg.update();
-      })
+      .then(reg=>reg.update())
       .then(()=>{sessionStorage.removeItem('operix_force_update_running');})
       .catch(()=>{sessionStorage.removeItem('operix_force_update_running');});
     });
