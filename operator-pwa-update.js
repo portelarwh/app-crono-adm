@@ -51,21 +51,22 @@
     style.textContent=`
       .top-actions-host{width:100%;display:block;margin:0 0 8px 0;box-sizing:border-box;}
       .top-actions-pill{width:100%;height:34px;min-height:34px;display:grid;grid-template-columns:82px minmax(0,1fr) 48px;align-items:center;border:1px solid rgba(255,255,255,.12);background:rgba(13,17,23,.90);color:#fff;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.18);overflow:hidden;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;z-index:30;}
-      .top-actions-pill span,.top-actions-pill button{height:34px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border:0;border-left:1px solid rgba(255,255,255,.10);background:transparent;color:inherit;font-size:10.5px;font-weight:900;letter-spacing:.01em;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-      .top-actions-pill span:first-child,.top-actions-pill button:first-child{border-left:0;}
-      .top-actions-pill button{cursor:pointer;touch-action:manipulation;}
-      .top-actions-pill button:active{background:rgba(255,255,255,.10);}
+      .top-actions-pill > span,.top-actions-pill > button{height:34px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border:0;border-left:1px solid rgba(255,255,255,.10);background:transparent;color:inherit;font-size:10.5px;font-weight:900;letter-spacing:.01em;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .top-actions-pill > span:first-child,.top-actions-pill > button:first-child{border-left:0;}
+      .top-actions-pill > button{cursor:pointer;touch-action:manipulation;}
+      .top-actions-pill > button:active{background:rgba(255,255,255,.10);}
       .top-actions-version{color:#dbeafe;min-width:82px;}
       .top-actions-update{width:100%;min-width:0;color:#9fb3c8;}
       .top-actions-theme{min-width:48px;font-size:16px!important;padding:0!important;}
+      .top-actions-update .desktop-label,.top-actions-update .mobile-label{border:0!important;padding:0!important;height:auto!important;background:transparent!important;display:inline;min-width:0!important;box-shadow:none!important;}
       .top-actions-update .mobile-label{display:none;}
       #appVersion,#op-theme-btn,.app-version-pill,.theme-floating-pill,.legacy-top-pill,.legacy-version-badge{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
       #forceUpdateAppBtn{position:static!important;right:auto!important;bottom:auto!important;box-shadow:none!important;opacity:1!important;border-radius:0!important;min-width:0!important;}
       html[data-theme="light"] .top-actions-pill{background:rgba(255,255,255,.95);color:#1a1f2e;border-color:rgba(26,31,46,.10);box-shadow:0 4px 12px rgba(15,23,42,.08);}
       html[data-theme="light"] .top-actions-version{color:#1d4ed8;}
       html[data-theme="light"] .top-actions-update{color:#64748b;}
-      html[data-theme="light"] .top-actions-pill span,html[data-theme="light"] .top-actions-pill button{border-left-color:rgba(26,31,46,.10);}
-      @media(max-width:520px){.top-actions-host{margin:0 0 8px 0;}.top-actions-pill{height:32px;min-height:32px;grid-template-columns:78px minmax(0,1fr) 46px;}.top-actions-pill span,.top-actions-pill button{height:32px;font-size:10px;padding:0 4px;letter-spacing:0;}.top-actions-version{min-width:78px;}.top-actions-theme{min-width:46px;font-size:15px!important;}.top-actions-update .desktop-label{display:none;}.top-actions-update .mobile-label{display:inline;}}
+      html[data-theme="light"] .top-actions-pill > span,html[data-theme="light"] .top-actions-pill > button{border-left-color:rgba(26,31,46,.10);}
+      @media(max-width:520px){.top-actions-host{margin:0 0 8px 0;}.top-actions-pill{height:32px;min-height:32px;grid-template-columns:78px minmax(0,1fr) 46px;}.top-actions-pill > span,.top-actions-pill > button{height:32px;font-size:10px;padding:0 4px;letter-spacing:0;}.top-actions-version{min-width:78px;}.top-actions-theme{min-width:46px;font-size:15px!important;}.top-actions-update .desktop-label{display:none!important;}.top-actions-update .mobile-label{display:inline!important;}}
       body.export-mode .top-actions-host,body.export-mode .top-actions-pill{display:none!important;}
     `;
     document.head.appendChild(style);
