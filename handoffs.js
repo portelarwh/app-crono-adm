@@ -106,24 +106,17 @@
     card.innerHTML = `
       <div class="chart-title">Handoffs e Responsáveis</div>
       <div class="handoffs-grid" id="handoffsGrid"></div>
-      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa. A mudança de área entre etapas preenchidas será considerada handoff automaticamente.</div>
+      <div class="handoffs-note" id="handoffsNote">Handoffs administrativos são calculados automaticamente com base nos dados da etapa.</div>
     `;
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
 
-  function inlineEditorHtml(record, index){
-    return `
-      <span class="handoff-inline screen-only" data-handoff-index="${index}">
-        <input class="handoff-input" data-field="areaAtual" placeholder="Área" value="${escapeAttr(record.areaAtual)}" title="Área da etapa">
-        <input class="handoff-input" data-field="responsavel" placeholder="Resp." value="${escapeAttr(record.responsavel)}" title="Responsável da etapa">
-      </span>
-    `;
+  function inlineEditorHtml(){
+    return '';
   }
 
-  function printBadgeHtml(record){
-    var area = clean(record.areaAtual, 'Área');
-    var resp = clean(record.responsavel, 'Resp.');
-    return '<span class="handoff-badge print-only" title="Área / responsável">' + escapeHtml(area) + ' · ' + escapeHtml(resp) + '</span>';
+  function printBadgeHtml(){
+    return '';
   }
 
   function escapeHtml(value){
@@ -140,53 +133,11 @@
   }
 
   function applyEditorsToRows(){
-    var rows = getRows();
-    var map = ensureRecords();
-
-    rows.forEach(function(row, index){
-      var key = getRowKey(row, index);
-      var record = normalizeRecord(map[key] || defaultRecord());
-      var slot = row.querySelector('.handoff-slot');
-
-      if(!slot){
-        slot = document.createElement('span');
-        slot.className = 'handoff-slot';
-        var anchor = row.querySelector('.admin-event-slot') || row.querySelector('.badge-va') || row.querySelector('.type-badge') || row.children[1];
-        if(anchor && anchor.parentNode){
-          anchor.parentNode.insertBefore(slot, anchor.nextSibling);
-        }else{
-          row.appendChild(slot);
-        }
-      }
-
-      slot.innerHTML = inlineEditorHtml(record, index) + printBadgeHtml(record);
-    });
-
-    bindInputs();
     renderSummary();
   }
 
   function bindInputs(){
-    Array.prototype.slice.call(document.querySelectorAll('.handoff-input')).forEach(function(input){
-      if(input.dataset.bound === '1') return;
-      input.dataset.bound = '1';
-
-      input.addEventListener('input', function(){
-        var wrapper = this.closest('.handoff-inline');
-        if(!wrapper) return;
-        var index = Number(wrapper.getAttribute('data-handoff-index'));
-        var row = getRows()[index];
-        if(!row) return;
-
-        var key = getRowKey(row, index);
-        var map = ensureRecords();
-        var record = normalizeRecord(map[key] || defaultRecord());
-        record[this.getAttribute('data-field')] = this.value;
-        map[key] = record;
-        saveMap(map);
-        renderSummary();
-      });
-    });
+    return;
   }
 
   function calculateHandoffs(){
