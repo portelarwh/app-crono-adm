@@ -72,24 +72,9 @@
       .handoffs-value { display:block; font-size:1.08rem; font-weight:900; margin-top:4px; font-variant-numeric:tabular-nums; }
       .handoffs-sub { display:block; font-size:.68rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
       .handoffs-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
-      .handoff-slot { display:inline-flex; align-items:center; margin-left:2px; }
-      .handoff-inline { display:inline-flex !important; gap:4px; align-items:center; flex-wrap:wrap; margin-left:2px; }
-      .handoff-input {
-        width:82px; min-width:64px; background:rgba(255,255,255,.06); color:var(--text-main);
-        border:1px solid var(--border); border-radius:5px; font-size:.68rem; font-weight:700; padding:3px 4px;
-        text-align:center; display:inline-flex !important; visibility:visible !important; opacity:1 !important;
-      }
-      .handoff-badge {
-        display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:64px;
-        padding:3px 5px; border-radius:4px; font-size:.62rem; font-weight:800;
-        border:1px solid rgba(255,255,255,.2); color:#fff; background:#fd7e14;
-        text-transform:uppercase; white-space:nowrap;
-      }
+      .handoff-slot, .handoff-inline, .handoff-input, .handoff-badge { display:none !important; }
       html[data-theme="light"] .handoffs-box { background:#f0f4fa; }
-      html[data-theme="light"] .handoff-input { background:#fff; color:#1a1f2e; }
       body.export-mode .handoffs-card { display:none !important; }
-      body.export-mode .handoff-input { display:none !important; }
-      body.export-mode .handoff-badge { font-size:6.6pt !important; min-width:52px !important; padding:2px 3px !important; }
     `;
     document.head.appendChild(style);
   }
@@ -106,86 +91,14 @@
     card.innerHTML = `
       <div class="chart-title">Handoffs e Responsáveis</div>
       <div class="handoffs-grid" id="handoffsGrid"></div>
-      <div class="handoffs-note" id="handoffsNote">Informe área e responsável por etapa. A mudança de área entre etapas preenchidas será considerada handoff automaticamente.</div>
+      <div class="handoffs-note" id="handoffsNote">A partir da próxima etapa, os handoffs serão calculados pela área responsável preenchida no modal Editar Etapa.</div>
     `;
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
 
-  function inlineEditorHtml(record, index){
-    return `
-      <span class="handoff-inline screen-only" data-handoff-index="${index}">
-        <input class="handoff-input" data-field="areaAtual" placeholder="Área" value="${escapeAttr(record.areaAtual)}" title="Área da etapa">
-        <input class="handoff-input" data-field="responsavel" placeholder="Resp." value="${escapeAttr(record.responsavel)}" title="Responsável da etapa">
-      </span>
-    `;
-  }
-
-  function printBadgeHtml(record){
-    var area = clean(record.areaAtual, 'Área');
-    var resp = clean(record.responsavel, 'Resp.');
-    return '<span class="handoff-badge print-only" title="Área / responsável">' + escapeHtml(area) + ' · ' + escapeHtml(resp) + '</span>';
-  }
-
-  function escapeHtml(value){
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function escapeAttr(value){
-    return escapeHtml(value).replace(/`/g, '&#096;');
-  }
-
-  function applyEditorsToRows(){
-    var rows = getRows();
-    var map = ensureRecords();
-
-    rows.forEach(function(row, index){
-      var key = getRowKey(row, index);
-      var record = normalizeRecord(map[key] || defaultRecord());
-      var slot = row.querySelector('.handoff-slot');
-
-      if(!slot){
-        slot = document.createElement('span');
-        slot.className = 'handoff-slot';
-        var anchor = row.querySelector('.admin-event-slot') || row.querySelector('.badge-va') || row.querySelector('.type-badge') || row.children[1];
-        if(anchor && anchor.parentNode){
-          anchor.parentNode.insertBefore(slot, anchor.nextSibling);
-        }else{
-          row.appendChild(slot);
-        }
-      }
-
-      slot.innerHTML = inlineEditorHtml(record, index) + printBadgeHtml(record);
-    });
-
-    bindInputs();
-    renderSummary();
-  }
-
-  function bindInputs(){
-    Array.prototype.slice.call(document.querySelectorAll('.handoff-input')).forEach(function(input){
-      if(input.dataset.bound === '1') return;
-      input.dataset.bound = '1';
-
-      input.addEventListener('input', function(){
-        var wrapper = this.closest('.handoff-inline');
-        if(!wrapper) return;
-        var index = Number(wrapper.getAttribute('data-handoff-index'));
-        var row = getRows()[index];
-        if(!row) return;
-
-        var key = getRowKey(row, index);
-        var map = ensureRecords();
-        var record = normalizeRecord(map[key] || defaultRecord());
-        record[this.getAttribute('data-field')] = this.value;
-        map[key] = record;
-        saveMap(map);
-        renderSummary();
-      });
+  function removeLineEditors(){
+    document.querySelectorAll('.handoff-slot, .handoff-inline, .handoff-input, .handoff-badge').forEach(function(el){
+      el.remove();
     });
   }
 
@@ -234,6 +147,7 @@
   }
 
   function renderSummary(){
+    removeLineEditors();
     injectSummaryCard();
     var grid = $('handoffsGrid');
     var note = $('handoffsNote');
@@ -253,9 +167,9 @@
     if(data.rows === 0){
       note.textContent = 'Sem etapas registradas. Registre o fluxo para mapear handoffs e responsáveis.';
     }else if(data.filled === 0){
-      note.textContent = 'Informe área e responsável nas etapas para calcular handoffs administrativos.';
+      note.textContent = 'Os campos Área, Resp. e Área · Resp. foram removidos da linha. Na próxima etapa, esses dados virão do modal Editar Etapa.';
     }else{
-      note.textContent = 'Leitura: o cálculo ignora a área informativa do cabeçalho e considera a sequência de áreas preenchidas nas etapas.';
+      note.textContent = 'Leitura: o cálculo considera somente dados administrativos salvos, sem campos visuais na linha da etapa.';
     }
 
     window.cronoAdmHandoffs = data;
@@ -265,7 +179,7 @@
     var timer = null;
     var observer = new MutationObserver(function(){
       clearTimeout(timer);
-      timer = setTimeout(applyEditorsToRows, 160);
+      timer = setTimeout(renderSummary, 160);
     });
     observer.observe(document.body, { childList:true, subtree:true });
   }
@@ -273,11 +187,11 @@
   function init(){
     injectStyles();
     injectSummaryCard();
-    applyEditorsToRows();
+    renderSummary();
     observeChanges();
   }
 
-  window.cronoAdmApplyHandoffs = applyEditorsToRows;
+  window.cronoAdmApplyHandoffs = renderSummary;
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
