@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-  var APP_VERSION='v5.3.3';
+  var APP_VERSION='v5.3.4';
   window.APP_VERSION=APP_VERSION;
 
   var started=false;
