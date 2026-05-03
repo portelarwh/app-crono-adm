@@ -127,8 +127,8 @@
       + '<span>'+ev.icon+'</span><span>'+ev.label+'</span></span>';
   }
 
-  function inlineSelectHtml(key, index){
-    return '<select class="admin-event-select-inline" data-admin-index="'+index+'">'+optionHtml(key)+'</select>';
+  function eventKeys(){
+    return Object.keys(EVENTS);
   }
 
   function applyEventsToRows(){
@@ -162,31 +162,54 @@
       }
 
       old.innerHTML = '<span class="screen-only">'+badgeHtml(map[key])+'</span><span class="print-only">'+badgeHtml(map[key])+'</span>';
-
-      var select = row.querySelector('.admin-event-select-inline');
-      if(!select){
-        var inline = document.createElement('span');
-        inline.className = 'screen-only admin-event-inline-editor';
-        inline.innerHTML = inlineSelectHtml(map[key], index);
-        old.parentNode.insertBefore(inline, old.nextSibling);
-      }
     });
 
     if(changed) saveMap(map);
-    bindInlineSelectors();
+    bindBadgeInteractions();
     updateSummary(rows, map);
   }
 
-  function bindInlineSelectors(){
-    Array.prototype.slice.call(document.querySelectorAll('.admin-event-select-inline')).forEach(function(select){
-      if(select.dataset.bound === '1') return;
-      select.dataset.bound = '1';
-      select.addEventListener('change', function(){
-        var index = Number(this.getAttribute('data-admin-index'));
-        var row = document.querySelectorAll('.history-row')[index];
-        var key = row ? getRowKey(row, index) : String(index);
+  function bindBadgeInteractions(){
+    Array.prototype.slice.call(document.querySelectorAll('.admin-event-slot .admin-event-badge')).forEach(function(badge){
+      if(badge.dataset.bound === '1') return;
+      badge.dataset.bound = '1';
+
+      var holdTimer = null;
+      var held = false;
+      badge.addEventListener('pointerdown', function(){
+        held = false;
+        holdTimer = setTimeout(function(){
+          held = true;
+          var row = badge.closest('.history-row');
+          if(!row) return;
+          var index = Number(row.getAttribute('data-index') || '0');
+          var key = getRowKey(row, index);
+          var map = loadMap();
+          var current = map[key] || DEFAULT_EVENT;
+          var options = eventKeys();
+          var labels = options.map(function(k, i){ return (i + 1) + ' - ' + EVENTS[k].label; }).join('\n');
+          var selected = window.prompt('Escolha categoria administrativa:\n' + labels, String(options.indexOf(current) + 1));
+          var idx = Number(selected) - 1;
+          if(!isNaN(idx) && options[idx]){
+            map[key] = options[idx];
+            saveMap(map);
+            applyEventsToRows();
+          }
+        }, 450);
+      });
+      badge.addEventListener('pointerup', function(){ clearTimeout(holdTimer); });
+      badge.addEventListener('pointerleave', function(){ clearTimeout(holdTimer); });
+      badge.addEventListener('click', function(){
+        if(held) return;
+        var row = badge.closest('.history-row');
+        if(!row) return;
+        var index = Number(row.getAttribute('data-index') || '0');
+        var key = getRowKey(row, index);
         var map = loadMap();
-        map[key] = this.value;
+        var options = eventKeys();
+        var current = map[key] || DEFAULT_EVENT;
+        var currIndex = options.indexOf(current);
+        map[key] = options[(currIndex + 1) % options.length];
         saveMap(map);
         applyEventsToRows();
       });

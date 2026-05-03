@@ -444,7 +444,7 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <input type="text" id="manualArea" placeholder="Ex: Financeiro">
 </div>
 <div class="input-group">
-<label>Solicitante</label>
+<label>Responsável</label>
 <input type="text" id="manualRequester" placeholder="Ex: Maria S.">
 </div>
 </div>
@@ -455,8 +455,8 @@ html[data-theme="light"] .modal-admin-divider { color: #94a3b8; border-top-color
 <input type="text" id="manualDemandType" placeholder="Ex: Aprovação">
 </div>
 <div class="input-group">
-<label>SLA (h)</label>
-<input type="number" id="manualSla" placeholder="Ex: 24" min="0" step="1">
+<label>SLA (H:mm)</label>
+<input type="text" id="manualSla" placeholder="Ex: 2:30" inputmode="decimal">
 </div>
 </div>
 
@@ -733,6 +733,26 @@ document.getElementById('manualModal').style.display = 'flex';
 }
 function closeManualModal() { document.getElementById('manualModal').style.display = 'none'; editingElementId = null; }
 
+function normalizeSlaValue(rawValue) {
+var raw = String(rawValue == null ? '' : rawValue).trim();
+if (!raw) return '';
+if (/^\d{1,3}:\d{1,2}$/.test(raw)) {
+var parts = raw.split(':');
+var h = parseInt(parts[0], 10);
+var m = parseInt(parts[1], 10);
+if (isNaN(h) || isNaN(m) || m < 0 || m > 59) return '';
+return h + ':' + String(m).padStart(2, '0');
+}
+var normalized = raw.replace(',', '.');
+if (!/^\d+(\.\d+)?$/.test(normalized)) return '';
+var hours = parseFloat(normalized);
+if (isNaN(hours) || hours < 0) return '';
+var totalMinutes = Math.round(hours * 60);
+var hh = Math.floor(totalMinutes / 60);
+var mm = totalMinutes % 60;
+return hh + ':' + String(mm).padStart(2, '0');
+}
+
 function saveManualTime() {
 var timeInput = parseFloat(document.getElementById('manualTime').value);
 if (!timeInput || timeInput <= 0) { alert('Insira um tempo válido.'); return; }
@@ -745,7 +765,9 @@ var desc = document.getElementById('manualDesc').value.trim();
 var area = document.getElementById('manualArea').value.trim();
 var requester = document.getElementById('manualRequester').value.trim();
 var demandType = document.getElementById('manualDemandType').value.trim();
-var sla = document.getElementById('manualSla').value.trim();
+var slaRaw = document.getElementById('manualSla').value.trim();
+var sla = normalizeSlaValue(slaRaw);
+if (slaRaw && !sla) { alert('SLA inválido. Use H:mm (ex: 2:30) ou número de horas (ex: 1,5).'); return; }
 var priority = document.getElementById('manualPriority').value;
 var channel = document.getElementById('manualChannel').value;
 if (editingElementId) {
@@ -910,7 +932,7 @@ var lines = [
 'Demanda/Processo;' + csvEscape(equipName),
 'TipoEstudo;' + csvEscape(getStudyTypeLabel()),
 '',
-'Ordem;Tipo;Analise VA;Dependencia;Tempo (s);Descricao;Area;Solicitante;TipoDemanda;SLA(h);Prioridade;Canal'
+'Ordem;Tipo;Analise VA;Dependencia;Tempo (s);Descricao;Area;Responsavel;TipoDemanda;SLA(h);Prioridade;Canal'
 ];
 for (var i = 0; i < elements.length; i++) {
 var el = elements[i];
@@ -1124,7 +1146,20 @@ var percentage = (el.time / totalGeral) * 100; var block = document.createElemen
 function saveToStorage() { var config = { equipName: document.getElementById('equipName').value, analystName: document.getElementById('analystName').value, goalTime: document.getElementById('goalTime').value, studyType: document.getElementById('studyType').value }; localStorage.setItem(STORAGE_KEY, JSON.stringify({ config: config, elements: elements, elementCounterId: elementCounterId })); }
 function loadFromStorage() { try { var raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_LEGACY); if (!raw) return; var data = JSON.parse(raw); if (data.config) { document.getElementById('equipName').value = data.config.equipName || ''; document.getElementById('analystName').value = data.config.analystName || ''; document.getElementById('goalTime').value = data.config.goalTime || ''; document.getElementById('studyType').value = migrateStudyType(data.config.studyType); } if (Array.isArray(data.elements) && data.elements.length > 0) { elements = data.elements.map(normalizeElement); elementCounterId = data.elementCounterId || elements.length; } } catch (e) { console.warn('Erro ao carregar sessão salva:', e); } }
 
-function resetTimer() { if (elements.length > 0 && !confirm('Deseja apagar os dados deste ciclo?')) return; isRunning = false; if (timerAnimation) cancelAnimationFrame(timerAnimation); elements = []; elementCounterId = 0; document.getElementById('liveTimer').innerText = '00:00.00'; document.getElementById('btnStart').disabled = false; document.getElementById('btnStart').innerText = '▶ Iniciar'; document.getElementById('btnStop').disabled = true; document.getElementById('btnLapPessoa').disabled = true; document.getElementById('btnLapMaquina').disabled = true; document.getElementById('btnLapProcesso').disabled = true; document.getElementById('equipName').disabled = false; localStorage.removeItem(STORAGE_KEY); updateUI(); updateGoalStatus(); }
+function clearAllProcessMappingData() {
+var keysToClear = [STORAGE_KEY, STORAGE_KEY_LEGACY, 'cronoAdm_handoffs_v1', 'cronoAdm_adminEvents_v1', 'cronoAdm_pendingAdminEvent_v1', 'cronoAdm_currentVsIdeal_v1'];
+for (var i = 0; i < keysToClear.length; i++) {
+try { localStorage.removeItem(keysToClear[i]); } catch (error) {}
+}
+window.cronoAdmHandoffs = null;
+window.cronoAdmPareto = null;
+window.cronoAdmCurrentVsIdeal = null;
+window.cronoAdmFlowEfficiency = null;
+window.cronoAdmExecutiveSummary = null;
+document.dispatchEvent(new CustomEvent('cronoAdm:fullReset'));
+}
+
+function resetTimer() { if (elements.length > 0 && !confirm('Deseja apagar os dados deste ciclo?')) return; isRunning = false; if (timerAnimation) cancelAnimationFrame(timerAnimation); elements = []; elementCounterId = 0; document.getElementById('liveTimer').innerText = '00:00.00'; document.getElementById('btnStart').disabled = false; document.getElementById('btnStart').innerText = '▶ Iniciar'; document.getElementById('btnStop').disabled = true; document.getElementById('btnLapPessoa').disabled = true; document.getElementById('btnLapMaquina').disabled = true; document.getElementById('btnLapProcesso').disabled = true; document.getElementById('equipName').disabled = false; clearAllProcessMappingData(); updateUI(); updateGoalStatus(); }
 
 function bindStaticButtons() {
 var map = {
