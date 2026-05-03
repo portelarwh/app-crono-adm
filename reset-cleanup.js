@@ -47,6 +47,7 @@
 
   function init(){
     bindResetCleanup();
+    document.addEventListener('cronoAdm:fullReset', clearAuxiliaryData);
     window.cronoAdmClearAuxiliaryData = clearAuxiliaryData;
   }
 
