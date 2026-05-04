@@ -19,14 +19,8 @@
 
   function $(id){ return document.getElementById(id); }
 
-  function loadMap(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-    catch(e){ return {}; }
-  }
-
-  function saveMap(map){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map || {}));
-  }
+  function loadMap(){ return CronoUtils.loadJSON(STORAGE_KEY, {}); }
+  function saveMap(map){ CronoUtils.saveJSON(STORAGE_KEY, map || {}); }
 
   function getPending(){
     return localStorage.getItem(PENDING_KEY) || DEFAULT_EVENT;
@@ -49,7 +43,10 @@
         font-size: .68rem; font-weight: 800; color: #fff;
         border: 1px solid rgba(255,255,255,.22); box-sizing: border-box;
         text-transform: uppercase; white-space: nowrap;
+        cursor: pointer; transition: transform .08s ease, filter .08s ease;
       }
+      .admin-event-badge:active { transform: scale(.96); filter: brightness(1.08); }
+      body.export-mode .admin-event-badge { cursor: default !important; }
       .admin-event-badge.wait, .admin-event-badge.loss { color: #111; }
       .admin-event-mini-summary {
         display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px;
@@ -135,7 +132,7 @@
   }
 
   function applyEventsToRows(){
-    var rows = Array.prototype.slice.call(document.querySelectorAll('.history-row'));
+    var rows = CronoUtils.getRows();
     var map = loadMap();
     var changed = false;
 
@@ -173,7 +170,7 @@
   }
 
   function bindBadgeInteractions(){
-    Array.prototype.slice.call(document.querySelectorAll('.admin-event-slot .admin-event-badge')).forEach(function(badge){
+    Array.from(document.querySelectorAll('.admin-event-slot .admin-event-badge')).forEach(function(badge){
       if(badge.dataset.bound === '1') return;
       badge.dataset.bound = '1';
 
@@ -195,13 +192,6 @@
             applyEventsToRows();
           });
         }, 450);
-
-openMenuForBadge(badge, current, function(selectedKey){
-  map[key] = selectedKey;
-  saveMap(map);
-  applyEventsToRows();
-});
-          }, 450);
       });
       badge.addEventListener('pointerup', function(){ clearTimeout(holdTimer); });
       badge.addEventListener('pointerleave', function(){ clearTimeout(holdTimer); });

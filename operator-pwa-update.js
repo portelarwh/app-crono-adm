@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-var APP_VERSION='v5.3.9';
+var APP_VERSION='v5.3.10';
 
 
   var started=false;
@@ -23,7 +23,6 @@ var APP_VERSION='v5.3.9';
 
   function loadAdminEvents(){
     appendScript('adminEventsScript','admin-events.js');
-    appendScript('adminEventsClickFixScript','admin-events-click-fix.js');
     appendScript('flowEfficiencyScript','flow-efficiency.js');
     appendScript('handoffsScript','handoffs.js');
     appendScript('handoffsCalculationFixScript','handoffs-calculation-fix.js');
