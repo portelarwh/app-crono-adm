@@ -1,6 +1,6 @@
 'use strict';
 
-APP_VERSION = 'v5.3.8';
+APP_VERSION = 'v5.3.9';
 
 
 
