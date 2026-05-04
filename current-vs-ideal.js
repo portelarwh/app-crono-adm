@@ -5,6 +5,7 @@
   var DEFAULT_ACTION = 'manter';
   var longPressTimer = null;
   var longPressTriggered = false;
+  var applyTimer = null;
 
   var ACTIONS = {
     manter: { label: 'Manter', factor: 1.00, color: '#28a745', impact: 'sem redução' },
@@ -33,7 +34,9 @@
   }
 
   function getRowKey(row, index){
-    return row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || row.getAttribute('data-ideal-row-key') || String(index);
+    var key = row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || row.getAttribute('data-ideal-row-key') || String(index);
+    row.setAttribute('data-ideal-row-key', key);
+    return key;
   }
 
   function parseTimeToSeconds(text){
@@ -77,12 +80,13 @@
       .current-vs-ideal-sub { display:block; font-size:.66rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
       .current-vs-ideal-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
       .ideal-action-select { display:none !important; }
-      .ideal-action-slot { display:inline-flex; align-items:center; justify-content:center; }
+      .current-vs-ideal-slot { display:inline-flex !important; align-items:center; justify-content:center; flex:0 0 auto; }
+      .ideal-action-slot { display:inline-flex !important; align-items:center; justify-content:center; }
       .ideal-action-badge {
-        display:inline-flex; align-items:center; justify-content:center; min-width:82px; padding:7px 10px;
+        display:inline-flex !important; align-items:center; justify-content:center; min-width:82px; padding:7px 10px;
         border-radius:7px; font-size:.68rem; font-weight:900; color:#fff; border:1px solid rgba(255,255,255,.22);
         text-transform:uppercase; white-space:nowrap; cursor:pointer; user-select:none; touch-action:manipulation;
-        box-shadow:0 2px 8px rgba(0,0,0,.16);
+        box-shadow:0 2px 8px rgba(0,0,0,.16); opacity:1 !important; visibility:visible !important;
       }
       .ideal-action-badge:active { transform:scale(.98); filter:brightness(1.08); }
       .ideal-action-menu {
@@ -129,7 +133,6 @@
     var changed = false;
     rows.forEach(function(row, index){
       var key = getRowKey(row, index);
-      row.setAttribute('data-ideal-row-key', key);
       if(!map[key]){
         map[key] = DEFAULT_ACTION;
         changed = true;
@@ -152,7 +155,7 @@
     var map = loadMap();
     map[key] = actionKey || DEFAULT_ACTION;
     saveMap(map);
-    applyEditors();
+    applyEditorsNow();
   }
 
   function badgeHtml(actionKey, index){
@@ -164,7 +167,11 @@
     return '<span class="screen-only ideal-action-slot" data-ideal-index="'+index+'">' + badgeHtml(actionKey, index) + '</span>';
   }
 
-  function applyEditors(){
+  function findInsertAnchor(row){
+    return row.querySelector('.admin-event-slot') || row.querySelector('.badge-va') || row.querySelector('.type-badge') || row.children[1] || row.firstChild;
+  }
+
+  function applyEditorsNow(){
     var rows = getRows();
     var map = ensureRecords();
     rows.forEach(function(row, index){
@@ -174,17 +181,23 @@
       if(!slot){
         slot = document.createElement('span');
         slot.className = 'current-vs-ideal-slot';
-        var anchor = row.querySelector('.handoff-slot') || row.querySelector('.admin-event-slot') || row.querySelector('.badge-va') || row.children[1];
+        var anchor = findInsertAnchor(row);
         if(anchor && anchor.parentNode){
           anchor.parentNode.insertBefore(slot, anchor.nextSibling);
         }else{
           row.appendChild(slot);
         }
       }
+      slot.style.display = 'inline-flex';
       slot.innerHTML = editorHtml(actionKey, index);
     });
     bindEditors();
     renderSummary();
+  }
+
+  function scheduleApply(delay){
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(applyEditorsNow, delay || 120);
   }
 
   function closeMenu(){
@@ -233,13 +246,8 @@
         }, 520);
       });
 
-      badge.addEventListener('pointerup', function(){
-        clearTimeout(longPressTimer);
-      });
-
-      badge.addEventListener('pointerleave', function(){
-        clearTimeout(longPressTimer);
-      });
+      badge.addEventListener('pointerup', function(){ clearTimeout(longPressTimer); });
+      badge.addEventListener('pointerleave', function(){ clearTimeout(longPressTimer); });
 
       badge.addEventListener('click', function(event){
         var index = Number(this.getAttribute('data-ideal-index'));
@@ -304,17 +312,30 @@
   }
 
   function observe(){
-    var timer = null;
-    function schedule(){ clearTimeout(timer); timer = setTimeout(applyEditors, 160); }
-    var observer = new MutationObserver(schedule);
+    var observer = new MutationObserver(function(){ scheduleApply(160); });
     observer.observe(document.body, { childList:true, subtree:true, characterData:true });
+  }
+
+  function bindGlobalReapply(){
+    document.addEventListener('click', function(event){
+      var target = event.target;
+      if(target && target.closest && target.closest('.btn-add-manual, .btn-lap-pessoa, .btn-lap-maquina, .btn-lap-processo, .btn-edit, .btn-delete, .btn-reset')){
+        setTimeout(applyEditorsNow, 120);
+        setTimeout(applyEditorsNow, 420);
+      }
+    }, true);
+    document.addEventListener('cronoAdm:auxiliaryDataCleared', function(){ setTimeout(applyEditorsNow, 250); });
+    window.cronoAdmApplyIdealActions = applyEditorsNow;
   }
 
   function init(){
     injectStyles();
     injectCard();
-    applyEditors();
+    applyEditorsNow();
+    setTimeout(applyEditorsNow, 300);
+    setTimeout(applyEditorsNow, 900);
     observe();
+    bindGlobalReapply();
   }
 
   if(document.readyState === 'loading'){
