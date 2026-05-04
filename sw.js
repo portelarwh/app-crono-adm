@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v5.3.11';
+const CACHE_NAME = 'crono-adm-lean-office-v5.3.12';
 
 
 const ASSETS = [
@@ -8,7 +8,6 @@ const ASSETS = [
   './index.html',
   './manifest.json',
   './utils.js',
-  './operator-whatsapp-share-fix.js',
   './operator-pwa-update.js',
   './admin-events.js',
   './flow-efficiency.js',
