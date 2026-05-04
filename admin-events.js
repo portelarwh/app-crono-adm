@@ -195,6 +195,13 @@
             applyEventsToRows();
           });
         }, 450);
+
+openMenuForBadge(badge, current, function(selectedKey){
+  map[key] = selectedKey;
+  saveMap(map);
+  applyEventsToRows();
+});
+          }, 450);
       });
       badge.addEventListener('pointerup', function(){ clearTimeout(holdTimer); });
       badge.addEventListener('pointerleave', function(){ clearTimeout(holdTimer); });
