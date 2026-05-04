@@ -1,6 +1,8 @@
 'use strict';
 
-APP_VERSION = 'v5.3.7';
+APP_VERSION = 'v5.3.8';
+
+
 
 
 function setupSplash(){

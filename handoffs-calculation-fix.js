@@ -152,13 +152,8 @@
       timer = setTimeout(renderFixedSummary, 90);
     }
 
-    document.addEventListener('input', function(event){
-      if(event.target && event.target.classList && event.target.classList.contains('handoff-input')) schedule();
-    }, true);
-
-    document.addEventListener('change', function(event){
-      if(event.target && event.target.classList && event.target.classList.contains('handoff-input')) schedule();
-    }, true);
+    document.addEventListener('input', schedule, true);
+    document.addEventListener('change', schedule, true);
 
     var observer = new MutationObserver(function(){ schedule(); });
     observer.observe(document.body, { childList:true, subtree:true });

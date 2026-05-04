@@ -72,24 +72,8 @@
       .handoffs-value { display:block; font-size:1.08rem; font-weight:900; margin-top:4px; font-variant-numeric:tabular-nums; }
       .handoffs-sub { display:block; font-size:.68rem; color:var(--text-muted); font-weight:700; margin-top:2px; }
       .handoffs-note { margin-top:8px; font-size:.72rem; line-height:1.35; color:var(--text-muted); text-align:center; }
-      .handoff-slot { display:inline-flex; align-items:center; margin-left:2px; }
-      .handoff-inline { display:inline-flex !important; gap:4px; align-items:center; flex-wrap:wrap; margin-left:2px; }
-      .handoff-input {
-        width:82px; min-width:64px; background:rgba(255,255,255,.06); color:var(--text-main);
-        border:1px solid var(--border); border-radius:5px; font-size:.68rem; font-weight:700; padding:3px 4px;
-        text-align:center; display:inline-flex !important; visibility:visible !important; opacity:1 !important;
-      }
-      .handoff-badge {
-        display:inline-flex; align-items:center; justify-content:center; gap:3px; min-width:64px;
-        padding:3px 5px; border-radius:4px; font-size:.62rem; font-weight:800;
-        border:1px solid rgba(255,255,255,.2); color:#fff; background:#fd7e14;
-        text-transform:uppercase; white-space:nowrap;
-      }
       html[data-theme="light"] .handoffs-box { background:#f0f4fa; }
-      html[data-theme="light"] .handoff-input { background:#fff; color:#1a1f2e; }
       body.export-mode .handoffs-card { display:none !important; }
-      body.export-mode .handoff-input { display:none !important; }
-      body.export-mode .handoff-badge { font-size:6.6pt !important; min-width:52px !important; padding:2px 3px !important; }
     `;
     document.head.appendChild(style);
   }

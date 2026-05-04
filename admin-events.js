@@ -100,7 +100,7 @@
           ${optionHtml(getPending())}
         </select>
         <div class="admin-events-helper">
-          Use para classificar o fluxo administrativo: execução, análise, aprovação, espera, retrabalho, sistema, comunicação ou decisão.
+          Use para classificar o fluxo administrativo: execução, análise, aprovação, busca de informação, correção, espera, retrabalho, sistema e comunicação.
         </div>
       </div>
       <div class="admin-event-mini-summary" id="adminEventSummary">
@@ -189,6 +189,12 @@
           var key = getRowKey(row, index);
           var map = loadMap();
           var current = map[key] || DEFAULT_EVENT;
+          openMenuForBadge(badge, current, function(selectedKey){
+            map[key] = selectedKey;
+            saveMap(map);
+            applyEventsToRows();
+          });
+        }, 450);
 
 openMenuForBadge(badge, current, function(selectedKey){
   map[key] = selectedKey;
