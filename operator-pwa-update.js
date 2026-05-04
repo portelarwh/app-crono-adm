@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-var APP_VERSION='v5.3.11';
+var APP_VERSION='v5.3.12';
 
 
   var started=false;
@@ -169,11 +169,103 @@ var APP_VERSION='v5.3.11';
     window.location.replace(url.toString());
   }
 
+  function clean(text){ return String(text == null ? '' : text).replace(/\s+/g,' ').trim(); }
+
+  function txt(id, fallback){
+    var el=document.getElementById(id);
+    return clean((el&&(el.textContent||el.innerText||el.value))||fallback||'0');
+  }
+
+  function val(id, fallback){
+    var el=document.getElementById(id);
+    return clean((el&&(el.value||el.textContent||el.innerText))||fallback||'Não informado');
+  }
+
+  function fmt(value, fallback){
+    return clean(value || fallback || '0');
+  }
+
+  function pct(value){
+    var n = Number(value);
+    return isFinite(n) ? n.toFixed(1)+'%' : '0,0%';
+  }
+
+  function topCriticalLabel(){
+    var p = window.cronoAdmPareto || {};
+    if(p.criticalItems && p.criticalItems.length){
+      return p.criticalItems[0].label || 'Evento crítico';
+    }
+    if(p.top && p.top.label){ return p.top.label; }
+    return 'Não identificado';
+  }
+
+  function buildWhatsAppSummary(){
+    var processo = val('equipName','Processo não informado');
+    var analyst = val('analystName','Não informado');
+    var goal = val('goalTime','Não definido');
+    var f = window.cronoAdmFlowEfficiency || {};
+    var h = window.cronoAdmHandoffs || {};
+    var e = window.cronoAdmExecutiveSummary || {};
+    var formatSeconds = (window.CronoUtils && window.CronoUtils.formatSeconds) || function(n){ return String(n||0); };
+
+    var conclusion = clean(e.conclusion || (window.getExecutiveSummaryText ? window.getExecutiveSummaryText() : 'Conclusão ainda não disponível.'));
+    var action = clean(e.action || 'Definir próximos passos com base no maior evento crítico identificado.');
+    var status = clean(e.status || 'Status não calculado');
+    var risk = clean(e.risk || 'Não calculado');
+
+    var lines=[
+      '📊 *Resumo Executivo — Crono ADM*','',
+      '📌 Processo: '+processo,
+      '👤 Analista: '+analyst,
+      '📅 Data: '+new Date().toLocaleDateString('pt-BR'),
+      '🎯 Meta/Referência: '+goal,'',
+      '⏱️ *Indicadores Lean Office*',
+      '• Lead Time: '+formatSeconds(f.lead),
+      '• Touch Time: '+formatSeconds(f.touch),
+      '• Waiting Time: '+formatSeconds(f.waiting)+' ('+pct(f.waitingPct)+')',
+      '• Retrabalho: '+formatSeconds(f.loss)+' ('+pct(f.lossPct)+')',
+      '• Eficiência do Fluxo: '+pct(f.efficiency),
+      '• Etapas: '+fmt(f.rows, txt('valSamples','0')),'',
+      '🔁 *Handoffs*',
+      '• Handoffs totais: '+fmt(h.handoffsTotal,'0'),
+      '• Passagens de área: '+fmt(h.handoffsArea,'0'),
+      '• Mudanças de responsável: '+fmt(h.handoffsResp,'0'),
+      '• Áreas envolvidas: '+fmt(h.uniqueAreas,'0'),
+      '• Responsáveis distintos: '+fmt(h.uniqueResp,'0'),'',
+      '🔎 *Principal evento*',
+      '• '+topCriticalLabel(),'',
+      '📌 *Conclusão*',
+      conclusion,'',
+      '➡️ *Ação recomendada*',
+      action,'',
+      '🚦 *Status*: '+status+' | Risco: '+risk,'',
+      'Gerado pelo Operix Crono ADM — Lean Office'
+    ];
+
+    return lines.join('\n');
+  }
+
+  function shareWhatsAppSimple(){
+    var text=buildWhatsAppSummary();
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  }
+
+  function bindWhatsAppButtons(){
+    document.querySelectorAll('button').forEach(function(btn){
+      if((btn.textContent||'').toLowerCase().includes('whatsapp')){
+        btn.onclick=function(e){ e.preventDefault(); shareWhatsAppSimple(); };
+      }
+    });
+  }
+
+  window.buildCronoAdmWhatsAppSummary = buildWhatsAppSummary;
+
   function register(){
     setVersion();
     loadAdminEvents();
     injectTopActionsPill();
     removeLegacyTopPills();
+    bindWhatsAppButtons();
 
     if(!('serviceWorker'in navigator))return;
 
