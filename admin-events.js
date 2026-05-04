@@ -9,11 +9,12 @@
     execucao: { label: 'Execução', icon: '▶', color: '#28a745', kind: 'touch' },
     analise: { label: 'Análise', icon: '🔎', color: '#4dabf7', kind: 'touch' },
     aprovacao: { label: 'Aprovação', icon: '✓', color: '#ffc107', kind: 'wait' },
+    busca_info: { label: 'Busca informação', icon: '🔍', color: '#20c997', kind: 'touch' },
+    correcao: { label: 'Correção', icon: '🛠', color: '#e83e8c', kind: 'loss' },
     espera: { label: 'Espera', icon: '⏳', color: '#dc3545', kind: 'wait' },
     retrabalho: { label: 'Retrabalho', icon: '↻', color: '#fd7e14', kind: 'loss' },
     sistema: { label: 'Sistema', icon: '⚙', color: '#8e44ad', kind: 'touch' },
-    comunicacao: { label: 'Comunicação', icon: '✉', color: '#17a2b8', kind: 'touch' },
-    decisao: { label: 'Decisão', icon: '◆', color: '#6f42c1', kind: 'touch' }
+    comunicacao: { label: 'Comunicação', icon: '✉', color: '#17a2b8', kind: 'touch' }
   };
 
   function $(id){ return document.getElementById(id); }
@@ -50,12 +51,6 @@
         text-transform: uppercase; white-space: nowrap;
       }
       .admin-event-badge.wait, .admin-event-badge.loss { color: #111; }
-      .admin-event-select-inline {
-        background: rgba(255,255,255,.06); color: var(--text-main);
-        border: 1px solid var(--border); border-radius: 5px;
-        font-size: .72rem; font-weight: 700; padding: 3px 5px;
-        width: auto; min-width: 104px; text-align: center;
-      }
       .admin-event-mini-summary {
         display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px;
       }
@@ -65,11 +60,19 @@
       }
       .admin-event-mini-title { display:block; font-size:.58rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; }
       .admin-event-mini-value { display:block; font-size:.95rem; font-weight: 900; margin-top: 2px; }
-      html[data-theme="light"] .admin-event-select-inline { background:#fff; color:#1a1f2e; }
       html[data-theme="light"] .admin-event-mini-box { background:#f0f4fa; }
       body.export-mode .admin-events-card { display: none !important; }
-      body.export-mode .admin-event-select-inline { display:none !important; }
       body.export-mode .admin-event-badge { min-width: 76px !important; padding: 2px 3px !important; font-size: 6.8pt !important; }
+      .admin-event-menu {
+        position: fixed; z-index: 99999; min-width: 220px; max-width: 280px;
+        background: rgba(10,14,24,.96); border: 1px solid var(--border); border-radius: 10px; padding: 8px;
+        box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      }
+      .admin-event-menu-btn {
+        width: 100%; margin: 0 0 6px 0; border: 0; border-radius: 7px; padding: 7px 8px;
+        color: #fff; font-weight: 800; font-size: .74rem; text-align: left; cursor: pointer;
+      }
+      .admin-event-menu-btn:last-child{ margin-bottom: 0; }
     `;
     document.head.appendChild(style);
   }
@@ -97,7 +100,7 @@
           ${optionHtml(getPending())}
         </select>
         <div class="admin-events-helper">
-          Use para classificar o fluxo administrativo: execução, análise, aprovação, espera, retrabalho, sistema, comunicação ou decisão.
+          Use para classificar o fluxo administrativo: execução, análise, aprovação, busca de informação, correção, espera, retrabalho, sistema e comunicação.
         </div>
       </div>
       <div class="admin-event-mini-summary" id="adminEventSummary">
@@ -127,8 +130,8 @@
       + '<span>'+ev.icon+'</span><span>'+ev.label+'</span></span>';
   }
 
-  function inlineSelectHtml(key, index){
-    return '<select class="admin-event-select-inline" data-admin-index="'+index+'">'+optionHtml(key)+'</select>';
+  function eventKeys(){
+    return Object.keys(EVENTS);
   }
 
   function applyEventsToRows(){
@@ -162,35 +165,87 @@
       }
 
       old.innerHTML = '<span class="screen-only">'+badgeHtml(map[key])+'</span><span class="print-only">'+badgeHtml(map[key])+'</span>';
-
-      var select = row.querySelector('.admin-event-select-inline');
-      if(!select){
-        var inline = document.createElement('span');
-        inline.className = 'screen-only admin-event-inline-editor';
-        inline.innerHTML = inlineSelectHtml(map[key], index);
-        old.parentNode.insertBefore(inline, old.nextSibling);
-      }
     });
 
     if(changed) saveMap(map);
-    bindInlineSelectors();
+    bindBadgeInteractions();
     updateSummary(rows, map);
   }
 
-  function bindInlineSelectors(){
-    Array.prototype.slice.call(document.querySelectorAll('.admin-event-select-inline')).forEach(function(select){
-      if(select.dataset.bound === '1') return;
-      select.dataset.bound = '1';
-      select.addEventListener('change', function(){
-        var index = Number(this.getAttribute('data-admin-index'));
-        var row = document.querySelectorAll('.history-row')[index];
-        var key = row ? getRowKey(row, index) : String(index);
+  function bindBadgeInteractions(){
+    Array.prototype.slice.call(document.querySelectorAll('.admin-event-slot .admin-event-badge')).forEach(function(badge){
+      if(badge.dataset.bound === '1') return;
+      badge.dataset.bound = '1';
+
+      var holdTimer = null;
+      var held = false;
+      badge.addEventListener('pointerdown', function(){
+        held = false;
+        holdTimer = setTimeout(function(){
+          held = true;
+          var row = badge.closest('.history-row');
+          if(!row) return;
+          var index = Number(row.getAttribute('data-index') || '0');
+          var key = getRowKey(row, index);
+          var map = loadMap();
+          var current = map[key] || DEFAULT_EVENT;
+          openMenuForBadge(badge, current, function(selectedKey){
+            map[key] = selectedKey;
+            saveMap(map);
+            applyEventsToRows();
+          });
+        }, 450);
+      });
+      badge.addEventListener('pointerup', function(){ clearTimeout(holdTimer); });
+      badge.addEventListener('pointerleave', function(){ clearTimeout(holdTimer); });
+      badge.addEventListener('click', function(){
+        if(held) return;
+        var row = badge.closest('.history-row');
+        if(!row) return;
+        var index = Number(row.getAttribute('data-index') || '0');
+        var key = getRowKey(row, index);
         var map = loadMap();
-        map[key] = this.value;
+        var options = eventKeys();
+        var current = map[key] || DEFAULT_EVENT;
+        var currIndex = options.indexOf(current);
+        map[key] = options[(currIndex + 1) % options.length];
         saveMap(map);
         applyEventsToRows();
       });
     });
+  }
+
+  function openMenuForBadge(badge, currentKey, onSelect){
+    closeOpenMenu();
+    var menu = document.createElement('div');
+    menu.className = 'admin-event-menu';
+    eventKeys().forEach(function(key){
+      var ev = EVENTS[key];
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'admin-event-menu-btn';
+      btn.style.background = ev.color;
+      btn.textContent = ev.icon + ' ' + ev.label + (key === currentKey ? ' ✓' : '');
+      btn.addEventListener('click', function(){
+        onSelect(key);
+        closeOpenMenu();
+      });
+      menu.appendChild(btn);
+    });
+    var rect = badge.getBoundingClientRect();
+    menu.style.left = Math.max(8, rect.left) + 'px';
+    menu.style.top = Math.min(window.innerHeight - 12, rect.bottom + 8) + 'px';
+    document.body.appendChild(menu);
+    window.__cronoAdminMenu = menu;
+    setTimeout(function(){
+      document.addEventListener('click', closeOpenMenu, { once: true });
+    }, 0);
+  }
+
+  function closeOpenMenu(){
+    var active = window.__cronoAdminMenu;
+    if(active && active.parentNode) active.parentNode.removeChild(active);
+    window.__cronoAdminMenu = null;
   }
 
   function updateSummary(rows, map){
