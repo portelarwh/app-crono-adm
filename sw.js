@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'crono-adm-lean-office-v5.3.10';
+const CACHE_NAME = 'crono-adm-lean-office-v5.3.11';
 
 
 const ASSETS = [
@@ -13,13 +13,11 @@ const ASSETS = [
   './admin-events.js',
   './flow-efficiency.js',
   './handoffs.js',
-  './handoffs-calculation-fix.js',
   './admin-pareto.js',
   './executive-summary.js',
   './executive-pdf.js',
   './current-vs-ideal.js',
   './timer-top-layout.js',
-  './handoffs-render-fix.js',
   './reset-cleanup.js'
 ];
 

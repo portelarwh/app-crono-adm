@@ -6,58 +6,27 @@
 
   function $(id){ return document.getElementById(id); }
 
-  function loadMap(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-    catch(e){ return {}; }
+  function getElementByRow(row){
+    var id = Number(row.getAttribute('data-id'));
+    if(!Array.isArray(window.elements)) return null;
+    for(var i = 0; i < window.elements.length; i++){
+      if(Number(window.elements[i].id) === id) return window.elements[i];
+    }
+    return null;
   }
 
-  function saveMap(map){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map || {}));
-  }
-
-  function clean(value, fallback){
-    var text = String(value == null ? '' : value).trim();
-    return text || fallback || '';
-  }
-
-  function getRows(){
-    return Array.prototype.slice.call(document.querySelectorAll('.history-row'));
-  }
-
-  function getRowKey(row, index){
-    var key = row.getAttribute('data-admin-row-key') || row.getAttribute('data-handoff-row-key') || row.getAttribute('data-ideal-row-key');
-    if(!key){ key = 'row-' + index; }
-    row.setAttribute('data-handoff-row-key', key);
-    return key;
-  }
-
-  function defaultRecord(){
-    return { areaAtual: '', responsavel: '' };
-  }
-
-  function normalizeRecord(record){
-    return {
-      areaAtual: clean(record && record.areaAtual, ''),
-      responsavel: clean(record && record.responsavel, '')
-    };
-  }
-
-  function ensureRecords(){
-    var rows = getRows();
-    var oldMap = loadMap();
-    var nextMap = {};
-    var changed = false;
-
-    rows.forEach(function(row, index){
-      var key = getRowKey(row, index);
-      var record = oldMap[key] ? normalizeRecord(oldMap[key]) : defaultRecord();
-      nextMap[key] = record;
-      if(!oldMap[key] || JSON.stringify(oldMap[key]) !== JSON.stringify(record)) changed = true;
+  function getRecords(){
+    var map = CronoUtils.loadJSON(STORAGE_KEY, {});
+    return CronoUtils.getRows().map(function(row, index){
+      var key = CronoUtils.getRowKey(row, index);
+      row.setAttribute('data-handoff-row-key', key);
+      var legacy = map[key] || {};
+      var element = getElementByRow(row) || {};
+      return {
+        areaAtual: CronoUtils.clean(element.area || legacy.areaAtual, ''),
+        responsavel: CronoUtils.clean(element.requester || legacy.responsavel, '')
+      };
     });
-
-    if(Object.keys(oldMap).length !== Object.keys(nextMap).length) changed = true;
-    if(changed) saveMap(nextMap);
-    return nextMap;
   }
 
   function injectStyles(){
@@ -95,65 +64,30 @@
     anchor.parentNode.insertBefore(card, anchor.nextSibling);
   }
 
-  function inlineEditorHtml(){
-    return '';
-  }
-
-  function printBadgeHtml(){
-    return '';
-  }
-
-  function escapeHtml(value){
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function escapeAttr(value){
-    return escapeHtml(value).replace(/`/g, '&#096;');
-  }
-
-  function applyEditorsToRows(){
-    renderSummary();
-  }
-
-  function bindInputs(){
-    return;
-  }
-
   function calculateHandoffs(){
-    var rows = getRows();
-    var map = ensureRecords();
-    var flowAreas = [];
-    var flowResp = [];
+    var rows = CronoUtils.getRows();
+    var records = getRecords();
     var filled = 0;
-
-    rows.forEach(function(row, index){
-      var key = getRowKey(row, index);
-      var record = normalizeRecord(map[key] || defaultRecord());
-      var area = clean(record.areaAtual, '');
-      var resp = clean(record.responsavel, '');
-
-      if(area || resp) filled++;
-      if(area) flowAreas.push(area);
-      if(resp) flowResp.push(resp);
-    });
-
     var handoffsArea = 0;
     var handoffsResp = 0;
 
-    for(var i=1; i<flowAreas.length; i++){
-      if(flowAreas[i] !== flowAreas[i-1]) handoffsArea++;
-    }
-    for(var r=1; r<flowResp.length; r++){
-      if(flowResp[r] !== flowResp[r-1]) handoffsResp++;
+    records.forEach(function(record){
+      if(record.areaAtual || record.responsavel) filled++;
+    });
+
+    var areaFlow = records.map(function(r){ return r.areaAtual; }).filter(Boolean);
+    for(var a = 1; a < areaFlow.length; a++){
+      if(areaFlow[a] !== areaFlow[a - 1]) handoffsArea++;
     }
 
-    var uniqueAreas = Array.from(new Set(flowAreas));
-    var uniqueResp = Array.from(new Set(flowResp));
+    for(var i = 1; i < records.length; i++){
+      var prev = records[i - 1].responsavel;
+      var curr = records[i].responsavel;
+      if(prev && curr && prev !== curr) handoffsResp++;
+    }
+
+    var uniqueAreas = Array.from(new Set(records.map(function(r){ return r.areaAtual; }).filter(Boolean)));
+    var uniqueResp = Array.from(new Set(records.map(function(r){ return r.responsavel; }).filter(Boolean)));
 
     return {
       rows: rows.length,
@@ -163,8 +97,8 @@
       handoffsTotal: handoffsArea,
       uniqueAreas: uniqueAreas.length,
       uniqueResp: uniqueResp.length,
-      firstArea: flowAreas[0] || DEFAULT_AREA,
-      lastArea: flowAreas[flowAreas.length - 1] || DEFAULT_AREA
+      firstArea: uniqueAreas[0] || DEFAULT_AREA,
+      lastArea: uniqueAreas[uniqueAreas.length - 1] || DEFAULT_AREA
     };
   }
 
@@ -175,44 +109,73 @@
     if(!grid || !note) return;
 
     var data = calculateHandoffs();
+    var esc = CronoUtils.escapeHtml;
 
     grid.innerHTML = `
-      <div class="handoffs-box"><span class="handoffs-title">Handoffs</span><span class="handoffs-value">${data.handoffsTotal}</span><span class="handoffs-sub">mudanças de área</span></div>
-      <div class="handoffs-box"><span class="handoffs-title">Áreas</span><span class="handoffs-value">${data.uniqueAreas}</span><span class="handoffs-sub">nas etapas</span></div>
-      <div class="handoffs-box"><span class="handoffs-title">Responsáveis</span><span class="handoffs-value">${data.uniqueResp}</span><span class="handoffs-sub">distintos</span></div>
-      <div class="handoffs-box"><span class="handoffs-title">Mudança área</span><span class="handoffs-value">${data.handoffsArea}</span><span class="handoffs-sub">entre etapas</span></div>
-      <div class="handoffs-box"><span class="handoffs-title">Mudança resp.</span><span class="handoffs-value">${data.handoffsResp}</span><span class="handoffs-sub">entre etapas</span></div>
-      <div class="handoffs-box"><span class="handoffs-title">Preenchidas</span><span class="handoffs-value">${data.filled}/${data.rows}</span><span class="handoffs-sub">etapas</span></div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Handoffs</span>
+        <span class="handoffs-value">${esc(data.handoffsTotal)}</span>
+        <span class="handoffs-sub">mudanças de área</span>
+      </div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Áreas</span>
+        <span class="handoffs-value">${esc(data.uniqueAreas)}</span>
+        <span class="handoffs-sub">envolvidas</span>
+      </div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Responsáveis</span>
+        <span class="handoffs-value">${esc(data.uniqueResp)}</span>
+        <span class="handoffs-sub">distintos</span>
+      </div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Passagem área</span>
+        <span class="handoffs-value">${esc(data.handoffsArea)}</span>
+        <span class="handoffs-sub">entre etapas</span>
+      </div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Mudança resp.</span>
+        <span class="handoffs-value">${esc(data.handoffsResp)}</span>
+        <span class="handoffs-sub">entre etapas</span>
+      </div>
+      <div class="handoffs-box">
+        <span class="handoffs-title">Preenchidas</span>
+        <span class="handoffs-value">${esc(data.filled)}/${esc(data.rows)}</span>
+        <span class="handoffs-sub">etapas</span>
+      </div>
     `;
 
     if(data.rows === 0){
       note.textContent = 'Sem etapas registradas. Registre o fluxo para mapear handoffs e responsáveis.';
     }else if(data.filled === 0){
-      note.textContent = 'Informe área e responsável nas etapas para calcular handoffs administrativos.';
+      note.textContent = 'Preencha área e responsável no modal de cada etapa para calcular handoffs administrativos.';
+    }else if(data.handoffsArea === 0 && data.handoffsResp === 0){
+      note.textContent = 'Leitura: nenhuma passagem de área identificada nas etapas preenchidas.';
+    }else if(data.handoffsTotal >= Math.max(3, Math.ceil(data.rows * 0.6))){
+      note.textContent = 'Leitura: alto número de handoffs. Avalie excesso de transferências, aprovações intermediárias e dependência entre áreas.';
     }else{
-      note.textContent = 'Leitura: o cálculo ignora a área informativa do cabeçalho e considera a sequência de áreas preenchidas nas etapas.';
+      note.textContent = 'Leitura: handoffs controlados. Valide se as passagens são necessárias ou se podem ser simplificadas.';
     }
 
     window.cronoAdmHandoffs = data;
   }
 
-  function observeChanges(){
-    var timer = null;
-    var observer = new MutationObserver(function(){
-      clearTimeout(timer);
-      timer = setTimeout(applyEditorsToRows, 160);
-    });
+  function bindEvents(){
+    var schedule = CronoUtils.debounce(renderSummary, 120);
+    document.addEventListener('input', schedule, true);
+    document.addEventListener('change', schedule, true);
+
+    var observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList:true, subtree:true });
   }
 
   function init(){
     injectStyles();
     injectSummaryCard();
-    applyEditorsToRows();
-    observeChanges();
+    renderSummary();
+    bindEvents();
   }
 
-  window.cronoAdmApplyHandoffs = applyEditorsToRows;
+  window.cronoAdmApplyHandoffs = renderSummary;
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);

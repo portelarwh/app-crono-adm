@@ -1,7 +1,7 @@
 'use strict';
 
 (function(){
-var APP_VERSION='v5.3.10';
+var APP_VERSION='v5.3.11';
 
 
   var started=false;
@@ -25,13 +25,11 @@ var APP_VERSION='v5.3.10';
     appendScript('adminEventsScript','admin-events.js');
     appendScript('flowEfficiencyScript','flow-efficiency.js');
     appendScript('handoffsScript','handoffs.js');
-    appendScript('handoffsCalculationFixScript','handoffs-calculation-fix.js');
     appendScript('adminParetoScript','admin-pareto.js');
     appendScript('executiveSummaryScript','executive-summary.js');
     appendScript('executivePdfScript','executive-pdf.js');
     appendScript('currentVsIdealScript','current-vs-ideal.js');
     appendScript('timerTopLayoutScript','timer-top-layout.js');
-    appendScript('handoffsRenderFixScript','handoffs-render-fix.js');
     appendScript('resetCleanupScript','reset-cleanup.js');
   }
 
