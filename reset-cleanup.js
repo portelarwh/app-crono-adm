@@ -1,9 +1,14 @@
 'use strict';
 
+// Convenção de storage:
+//   cronoAdm_*  → dados de cálculo derivado, podem ser resetados.
+//   operix_*    → preferências do usuário (tema, etc), preservadas em reset.
+
 (function(){
   var AUX_KEYS = [
     'cronoAdm_handoffs_v1',
     'cronoAdm_adminEvents_v1',
+    'cronoAdm_pendingAdminEvent_v1',
     'cronoAdm_currentVsIdeal_v1'
   ];
 
@@ -15,12 +20,14 @@
     window.cronoAdmHandoffs = null;
     window.cronoAdmPareto = null;
     window.cronoAdmCurrentVsIdeal = null;
+    window.cronoAdmFlowEfficiency = null;
+    window.cronoAdmExecutiveSummary = null;
 
     document.querySelectorAll('.handoff-slot, .admin-event-slot, .current-vs-ideal-slot').forEach(function(slot){
       slot.remove();
     });
 
-    document.querySelectorAll('#handoffsCard, #adminParetoCard, #currentVsIdealCard').forEach(function(card){
+    document.querySelectorAll('#handoffsCard, #adminParetoCard, #currentVsIdealCard, #flowEfficiencyCard, #adminEventsCard').forEach(function(card){
       card.remove();
     });
 
